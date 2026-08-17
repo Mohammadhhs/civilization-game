@@ -1,0 +1,53 @@
+# Maven build output
+target/
+**/target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Java compiled files
+*.class
+*.war
+*.ear
+
+# Runtime-generated game data
+/saves/
+/logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~
+
+# Java crash reports
+hs_err_pid*
+replay_pid*
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# Eclipse
+.classpath
+.project
+.settings/
+.apt_generated/
+.factorypath
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+
+# VS Code
+.vscode/
