@@ -4,6 +4,8 @@ import ir.ac.ap.civilization.model.production.ProductionCommand;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
 
+import java.util.Objects;
+
 public final class TownHall {
 
     private static final int BASE_MAXIMUM_HP = 200;
@@ -47,6 +49,45 @@ public final class TownHall {
         return activeCommand != null;
     }
 
+    public boolean canStartUpgrade() {
+        if (isBusy() || currentLevel.isMaximumLevel()) {
+            return false;
+        }
+
+        TownHallLevel targetLevel =
+                currentLevel.getNextLevel();
+
+        return stockpile.canAfford(
+                targetLevel.getUpgradeCost()
+        );
+    }
+
+    public int getBaseProduction(
+            ResourceType resourceType
+    ) {
+        Objects.requireNonNull(
+                resourceType,
+                "Resource type cannot be null"
+        );
+
+        switch (resourceType) {
+            case FOOD:
+                return BASE_FOOD_PRODUCTION;
+
+            case WOOD:
+                return BASE_WOOD_PRODUCTION;
+
+            case STONE:
+            case IRON:
+                return 0;
+
+            default:
+                throw new IllegalStateException(
+                        "Unknown resource type"
+                );
+        }
+    }
+
     public String getActiveCommandName() {
         if (activeCommand == null) {
             return "Idle";
@@ -64,15 +105,19 @@ public final class TownHall {
     }
 
     public void produceBaseResources() {
-        stockpile.add(
-                ResourceType.FOOD,
-                BASE_FOOD_PRODUCTION
-        );
+        for (ResourceType resourceType :
+                ResourceType.values()) {
 
-        stockpile.add(
-                ResourceType.WOOD,
-                BASE_WOOD_PRODUCTION
-        );
+            int production =
+                    getBaseProduction(resourceType);
+
+            if (production > 0) {
+                stockpile.add(
+                        resourceType,
+                        production
+                );
+            }
+        }
     }
 
     public void startUpgrade() {
@@ -135,7 +180,10 @@ public final class TownHall {
             );
         }
 
-        currentHp = Math.max(0, currentHp - damage);
+        currentHp = Math.max(
+                0,
+                currentHp - damage
+        );
     }
 
     public void heal(int amount) {
@@ -152,11 +200,10 @@ public final class TownHall {
     }
 
     void applyUpgrade(TownHallLevel targetLevel) {
-        if (targetLevel == null) {
-            throw new NullPointerException(
-                    "Target level cannot be null"
-            );
-        }
+        Objects.requireNonNull(
+                targetLevel,
+                "Target level cannot be null"
+        );
 
         TownHallLevel expectedLevel =
                 currentLevel.getNextLevel();
