@@ -6,6 +6,7 @@ import ir.ac.ap.civilization.model.map.GameMap;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.HexMapGenerator;
 import ir.ac.ap.civilization.model.map.HexTile;
+import ir.ac.ap.civilization.model.map.PlayerTerritory;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
 import ir.ac.ap.civilization.model.unit.Builder;
@@ -26,11 +27,14 @@ public final class GameState {
     private static final int STARTING_STONE = 60;
     private static final int STARTING_IRON = 0;
 
+    private static final int STARTING_TERRITORY_RADIUS = 2;
+
     private static final HexCoordinate TOWN_HALL_COORDINATE =
             new HexCoordinate(0, 0);
 
     private final TownHall townHall;
     private final GameMap gameMap;
+    private final PlayerTerritory playerTerritory;
     private final List<Unit> units;
     private final FogOfWarService fogOfWarService;
 
@@ -45,11 +49,18 @@ public final class GameState {
         this.turnNumber = 1;
         this.nextUnitId = 1;
         this.townHall = new TownHall();
-        this.gameMap = new HexMapGenerator().generate(mapSeed);
+
+        this.gameMap =
+                new HexMapGenerator().generate(mapSeed);
+
+        this.playerTerritory =
+                new PlayerTerritory(gameMap);
+
         this.units = new ArrayList<>();
         this.fogOfWarService = new FogOfWarService();
 
         initializeStartingResources();
+        initializeStartingTerritory();
         initializeStartingUnits();
         refreshVisibility();
     }
@@ -68,6 +79,10 @@ public final class GameState {
 
     public HexCoordinate getTownHallCoordinate() {
         return TOWN_HALL_COORDINATE;
+    }
+
+    public PlayerTerritory getPlayerTerritory() {
+        return playerTerritory;
     }
 
     public List<Unit> getUnits() {
@@ -100,7 +115,9 @@ public final class GameState {
             }
         }
 
-        return Collections.unmodifiableList(matchingUnits);
+        return Collections.unmodifiableList(
+                matchingUnits
+        );
     }
 
     public void refreshVisibility() {
@@ -112,7 +129,8 @@ public final class GameState {
     }
 
     void incrementTurnNumber() {
-        turnNumber = Math.incrementExact(turnNumber);
+        turnNumber =
+                Math.incrementExact(turnNumber);
     }
 
     void restoreAllUnitActionPoints() {
@@ -125,10 +143,29 @@ public final class GameState {
         ResourceStockpile stockpile =
                 townHall.getStockpile();
 
-        stockpile.add(ResourceType.FOOD, STARTING_FOOD);
-        stockpile.add(ResourceType.WOOD, STARTING_WOOD);
-        stockpile.add(ResourceType.STONE, STARTING_STONE);
-        stockpile.add(ResourceType.IRON, STARTING_IRON);
+        stockpile.add(
+                ResourceType.FOOD,
+                STARTING_FOOD
+        );
+        stockpile.add(
+                ResourceType.WOOD,
+                STARTING_WOOD
+        );
+        stockpile.add(
+                ResourceType.STONE,
+                STARTING_STONE
+        );
+        stockpile.add(
+                ResourceType.IRON,
+                STARTING_IRON
+        );
+    }
+
+    private void initializeStartingTerritory() {
+        playerTerritory.claimArea(
+                TOWN_HALL_COORDINATE,
+                STARTING_TERRITORY_RADIUS
+        );
     }
 
     private void initializeStartingUnits() {
@@ -182,11 +219,15 @@ public final class GameState {
 
         if (!startingTile.isNormallyPassable()) {
             throw new IllegalStateException(
-                    "Starting unit must be placed on a passable tile"
+                    "Starting unit must be placed " +
+                            "on a passable tile"
             );
         }
 
-        if (!getUnitsAt(unit.getPosition()).isEmpty()) {
+        if (!getUnitsAt(
+                unit.getPosition()
+        ).isEmpty()) {
+
             throw new IllegalStateException(
                     "Starting units cannot share a tile"
             );
@@ -197,7 +238,10 @@ public final class GameState {
 
     private int createNextUnitId() {
         int createdId = nextUnitId;
-        nextUnitId = Math.incrementExact(nextUnitId);
+
+        nextUnitId =
+                Math.incrementExact(nextUnitId);
+
         return createdId;
     }
 }

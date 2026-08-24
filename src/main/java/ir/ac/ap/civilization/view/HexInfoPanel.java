@@ -17,7 +17,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.util.Objects;
-import java.util.Set;
 
 public final class HexInfoPanel extends JPanel {
 
@@ -37,6 +36,7 @@ public final class HexInfoPanel extends JPanel {
     private final JLabel coordinateLabel;
     private final JLabel terrainLabel;
     private final JLabel resourcesLabel;
+    private final JLabel territoryLabel;
     private final JLabel movementLabel;
     private final JLabel passableLabel;
     private final JLabel constructionLabel;
@@ -49,9 +49,15 @@ public final class HexInfoPanel extends JPanel {
     private final JLabel chargesLabel;
 
     public HexInfoPanel() {
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setLayout(
+                new BoxLayout(
+                        this,
+                        BoxLayout.Y_AXIS
+                )
+        );
+
         setBackground(BACKGROUND_COLOR);
-        setPreferredSize(new Dimension(270, 0));
+        setPreferredSize(new Dimension(300, 0));
 
         setBorder(
                 BorderFactory.createCompoundBorder(
@@ -62,13 +68,19 @@ public final class HexInfoPanel extends JPanel {
                                 0,
                                 new Color(55, 64, 75)
                         ),
-                        new EmptyBorder(10, 12, 10, 12)
+                        new EmptyBorder(
+                                10,
+                                12,
+                                10,
+                                12
+                        )
                 )
         );
 
         coordinateLabel = createInformationLabel();
         terrainLabel = createInformationLabel();
         resourcesLabel = createInformationLabel();
+        territoryLabel = createInformationLabel();
         movementLabel = createInformationLabel();
         passableLabel = createInformationLabel();
         constructionLabel = createInformationLabel();
@@ -84,11 +96,12 @@ public final class HexInfoPanel extends JPanel {
                 "Selected Hex",
                 HEX_ACCENT_COLOR
         ));
-        add(Box.createVerticalStrut(7));
 
+        add(Box.createVerticalStrut(7));
         addWithSpacing(coordinateLabel);
         addWithSpacing(terrainLabel);
         addWithSpacing(resourcesLabel);
+        addWithSpacing(territoryLabel);
         addWithSpacing(movementLabel);
         addWithSpacing(passableLabel);
         addWithSpacing(constructionLabel);
@@ -100,8 +113,8 @@ public final class HexInfoPanel extends JPanel {
                 "Selected Unit",
                 UNIT_ACCENT_COLOR
         ));
-        add(Box.createVerticalStrut(7));
 
+        add(Box.createVerticalStrut(7));
         addWithSpacing(unitTypeLabel);
         addWithSpacing(unitIdLabel);
         addWithSpacing(actionPointsLabel);
@@ -142,9 +155,14 @@ public final class HexInfoPanel extends JPanel {
 
             resourcesLabel.setText(
                     "Resources: " +
-                            getResourcesDisplayText(
-                                    tile.getNaturalResources()
-                            )
+                            getResourcesDisplayText(tile)
+            );
+
+            territoryLabel.setText(
+                    "Territory: " +
+                            (tile.isInsidePlayerTerritory()
+                                    ? "Player"
+                                    : "Outside")
             );
 
             movementLabel.setText(
@@ -184,6 +202,7 @@ public final class HexInfoPanel extends JPanel {
         coordinateLabel.setText("Coordinate: -");
         terrainLabel.setText("Terrain: -");
         resourcesLabel.setText("Resources: -");
+        territoryLabel.setText("Territory: -");
         movementLabel.setText("Movement: -");
         passableLabel.setText("Passable: -");
         constructionLabel.setText("Construction: -");
@@ -195,6 +214,7 @@ public final class HexInfoPanel extends JPanel {
     private void showUnknownHex() {
         terrainLabel.setText("Terrain: Unknown");
         resourcesLabel.setText("Resources: Unknown");
+        territoryLabel.setText("Territory: Unknown");
         movementLabel.setText("Movement: Unknown");
         passableLabel.setText("Passable: Unknown");
         constructionLabel.setText("Construction: Unknown");
@@ -207,7 +227,9 @@ public final class HexInfoPanel extends JPanel {
             unitIdLabel.setText("Unit ID: -");
             actionPointsLabel.setText("AP: -");
             visionLabel.setText("Vision: -");
-            chargesLabel.setText("Builder charges: -");
+            chargesLabel.setText(
+                    "Builder charges: -"
+            );
             return;
         }
 
@@ -250,7 +272,10 @@ public final class HexInfoPanel extends JPanel {
             Color color
     ) {
         JLabel label =
-                new JLabel(text, SwingConstants.CENTER);
+                new JLabel(
+                        text,
+                        SwingConstants.CENTER
+                );
 
         label.setFont(
                 new Font(
@@ -284,6 +309,7 @@ public final class HexInfoPanel extends JPanel {
         label.setHorizontalAlignment(
                 SwingConstants.LEFT
         );
+
         label.setAlignmentX(0.5f);
 
         label.setBorder(
@@ -291,7 +317,12 @@ public final class HexInfoPanel extends JPanel {
                         BorderFactory.createLineBorder(
                                 new Color(62, 71, 83)
                         ),
-                        new EmptyBorder(5, 8, 5, 8)
+                        new EmptyBorder(
+                                5,
+                                8,
+                                5,
+                                8
+                        )
                 )
         );
 
@@ -334,22 +365,55 @@ public final class HexInfoPanel extends JPanel {
     }
 
     private String getResourcesDisplayText(
-            Set<NaturalResourceType> resources
+            HexTile tile
     ) {
-        if (resources.isEmpty()) {
+        if (tile.getNaturalResources().isEmpty()) {
             return "None";
         }
 
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder =
+                new StringBuilder();
 
-        for (NaturalResourceType resource : resources) {
+        for (NaturalResourceType resourceType :
+                tile.getNaturalResources()) {
+
             if (builder.length() > 0) {
                 builder.append(", ");
             }
 
             builder.append(
-                    getResourceDisplayName(resource)
+                    getResourceDisplayName(resourceType)
             );
+
+            builder.append(' ');
+
+            if (tile.isNaturalResourceDepleted(
+                    resourceType
+            )) {
+                builder.append("DEPLETED (0/");
+
+                builder.append(
+                        tile.getInitialResourceAmount(
+                                resourceType
+                        )
+                );
+
+                builder.append(')');
+            } else {
+                builder.append(
+                        tile.getRemainingResourceAmount(
+                                resourceType
+                        )
+                );
+
+                builder.append('/');
+
+                builder.append(
+                        tile.getInitialResourceAmount(
+                                resourceType
+                        )
+                );
+            }
         }
 
         return builder.toString();
