@@ -23,6 +23,8 @@ public final class TurnManager {
         ResourceStockpile stockpile =
                 townHall.getStockpile();
 
+        gameState.restoreAllUnitActionPoints();
+
         townHall.produceBaseResources();
 
         townHall.advanceProductionQueue();
