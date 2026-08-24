@@ -4,6 +4,7 @@ import ir.ac.ap.civilization.model.game.GameState;
 import ir.ac.ap.civilization.model.game.TurnManager;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.HexTile;
+import ir.ac.ap.civilization.model.technology.TechnologyType;
 import ir.ac.ap.civilization.model.unit.UnitMovementResult;
 import ir.ac.ap.civilization.model.unit.UnitMovementService;
 
@@ -22,8 +23,7 @@ public final class GameController {
                 "Game state cannot be null"
         );
 
-        this.turnManager =
-                new TurnManager(gameState);
+        this.turnManager = new TurnManager(gameState);
 
         this.unitMovementService =
                 new UnitMovementService(gameState);
@@ -38,15 +38,26 @@ public final class GameController {
     }
 
     public void startTownHallUpgrade() {
-        gameState
-                .getTownHall()
-                .startUpgrade();
+        gameState.getTownHall().startUpgrade();
     }
 
     public void cancelTownHallCommand() {
-        gameState
-                .getTownHall()
+        gameState.getTownHall()
                 .cancelCurrentCommand();
+    }
+
+    public void startTechnologyResearch(
+            TechnologyType technologyType
+    ) {
+        gameState.getTownHall()
+                .startResearch(technologyType);
+    }
+
+    public boolean canStartTechnologyResearch(
+            TechnologyType technologyType
+    ) {
+        return gameState.getTownHall()
+                .canStartResearch(technologyType);
     }
 
     public boolean canMoveUnit(

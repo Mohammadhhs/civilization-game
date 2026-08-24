@@ -17,6 +17,7 @@ public final class GameFrame extends JFrame {
     private final HudPanel hudPanel;
     private final HexMapPanel hexMapPanel;
     private final HexInfoPanel hexInfoPanel;
+    private final TechnologyPanel technologyPanel;
 
     public GameFrame(GameController controller) {
         super("Civilization - Advanced Programming Project");
@@ -29,6 +30,7 @@ public final class GameFrame extends JFrame {
         this.hudPanel = new HudPanel();
         this.hexMapPanel = new HexMapPanel(controller);
         this.hexInfoPanel = new HexInfoPanel();
+        this.technologyPanel = new TechnologyPanel();
 
         configureFrame();
         arrangeComponents();
@@ -39,13 +41,14 @@ public final class GameFrame extends JFrame {
     private void configureFrame() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        setMinimumSize(new Dimension(960, 640));
-        setSize(1200, 760);
+        setMinimumSize(new Dimension(1100, 680));
+        setSize(1400, 800);
         setLocationRelativeTo(null);
     }
 
     private void arrangeComponents() {
         add(hudPanel, BorderLayout.NORTH);
+        add(technologyPanel, BorderLayout.WEST);
         add(hexMapPanel, BorderLayout.CENTER);
         add(hexInfoPanel, BorderLayout.EAST);
     }
@@ -90,6 +93,17 @@ public final class GameFrame extends JFrame {
                         "Turn completed and unit AP restored"
                 )
         );
+
+        technologyPanel.setResearchAction(
+                technologyType -> executeAction(
+                        () -> controller
+                                .startTechnologyResearch(
+                                        technologyType
+                                ),
+                        technologyType.getDisplayName()
+                                + " research started"
+                )
+        );
     }
 
     private void executeAction(
@@ -99,6 +113,7 @@ public final class GameFrame extends JFrame {
         try {
             action.run();
             refreshView();
+
             hudPanel.setStatusMessage(
                     successMessage,
                     false
@@ -124,8 +139,10 @@ public final class GameFrame extends JFrame {
     }
 
     private void refreshView() {
-        hudPanel.refresh(
-                controller.getGameState()
+        hudPanel.refresh(controller.getGameState());
+
+        technologyPanel.refresh(
+                controller.getGameState().getTownHall()
         );
 
         hexMapPanel.repaint();

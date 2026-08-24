@@ -3,8 +3,11 @@ package ir.ac.ap.civilization.model.building;
 import ir.ac.ap.civilization.model.production.ProductionCommand;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
+import ir.ac.ap.civilization.model.technology.TechnologyManager;
+import ir.ac.ap.civilization.model.technology.TechnologyType;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public final class TownHall {
 
@@ -13,20 +16,26 @@ public final class TownHall {
     private static final int BASE_WOOD_PRODUCTION = 4;
 
     private final ResourceStockpile stockpile;
+    private final TechnologyManager technologyManager;
 
     private TownHallLevel currentLevel;
     private int currentHp;
     private int maximumHp;
+    private int storageTechnologyBonus;
     private ProductionCommand activeCommand;
 
     public TownHall() {
         this.currentLevel = TownHallLevel.BASE_CAMP;
         this.maximumHp = BASE_MAXIMUM_HP;
         this.currentHp = maximumHp;
+        this.storageTechnologyBonus = 0;
 
         this.stockpile = new ResourceStockpile(
                 currentLevel.getStorageCapacity()
         );
+
+        this.technologyManager =
+                new TechnologyManager();
     }
 
     public TownHallLevel getCurrentLevel() {
@@ -45,6 +54,14 @@ public final class TownHall {
         return stockpile;
     }
 
+    public TechnologyManager getTechnologyManager() {
+        return technologyManager;
+    }
+
+    public int getStorageTechnologyBonus() {
+        return storageTechnologyBonus;
+    }
+
     public boolean isBusy() {
         return activeCommand != null;
     }
@@ -60,6 +77,45 @@ public final class TownHall {
         return stockpile.canAfford(
                 targetLevel.getUpgradeCost()
         );
+    }
+
+    public boolean canStartResearch(
+            TechnologyType technologyType
+    ) {
+        Objects.requireNonNull(
+                technologyType,
+                "Technology type cannot be null"
+        );
+
+        return !isBusy()
+                && technologyManager.canResearch(technologyType)
+                && stockpile.canAfford(
+                technologyType.getResearchCost()
+        );
+    }
+
+    public boolean hasTechnology(
+            TechnologyType technologyType
+    ) {
+        return technologyManager.isCompleted(technologyType);
+    }
+
+    public Optional<TechnologyType>
+    getActiveResearchTechnology() {
+        if (!(activeCommand instanceof
+                TechnologyResearchCommand)) {
+            return Optional.empty();
+        }
+
+        TechnologyResearchCommand command =
+                (TechnologyResearchCommand) activeCommand;
+
+        return Optional.of(command.getTechnologyType());
+    }
+
+    public double getMiningProductionMultiplier() {
+        return technologyManager
+                .getMiningProductionMultiplier();
     }
 
     public int getBaseProduction(
@@ -150,6 +206,49 @@ public final class TownHall {
                 new TownHallUpgradeCommand(targetLevel);
     }
 
+    public void startResearch(
+            TechnologyType technologyType
+    ) {
+        Objects.requireNonNull(
+                technologyType,
+                "Technology type cannot be null"
+        );
+
+        if (isBusy()) {
+            throw new IllegalStateException(
+                    "Town Hall is already processing a command"
+            );
+        }
+
+        if (technologyManager.isCompleted(technologyType)) {
+            throw new IllegalStateException(
+                    "Technology has already been researched"
+            );
+        }
+
+        if (!technologyManager
+                .arePrerequisitesCompleted(technologyType)) {
+            throw new IllegalStateException(
+                    "Technology prerequisites are not completed"
+            );
+        }
+
+        if (!stockpile.canAfford(
+                technologyType.getResearchCost()
+        )) {
+            throw new IllegalStateException(
+                    "Not enough resources to research technology"
+            );
+        }
+
+        stockpile.spend(
+                technologyType.getResearchCost()
+        );
+
+        activeCommand =
+                new TechnologyResearchCommand(technologyType);
+    }
+
     public void advanceProductionQueue() {
         if (activeCommand == null) {
             return;
@@ -218,8 +317,23 @@ public final class TownHall {
 
         stockpile.setCapacityPerResource(
                 targetLevel.getStorageCapacity()
+                        + storageTechnologyBonus
         );
 
         heal(targetLevel.getHealAfterUpgrade());
+    }
+
+    void applyTechnology(
+            TechnologyType technologyType
+    ) {
+        technologyManager.completeResearch(technologyType);
+
+        storageTechnologyBonus +=
+                technologyType.getStorageCapacityBonus();
+
+        stockpile.setCapacityPerResource(
+                currentLevel.getStorageCapacity()
+                        + storageTechnologyBonus
+        );
     }
 }

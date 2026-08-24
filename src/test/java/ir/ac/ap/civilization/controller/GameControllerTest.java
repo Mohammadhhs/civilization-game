@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import ir.ac.ap.civilization.model.technology.TechnologyType;
 
 class GameControllerTest {
 
@@ -103,6 +104,29 @@ class GameControllerTest {
         assertThrows(
                 NullPointerException.class,
                 () -> new GameController(null)
+        );
+    }
+    @Test
+    void controllerShouldStartTechnologyResearch() {
+        GameState gameState = new GameState();
+
+        GameController controller =
+                new GameController(gameState);
+
+        assertTrue(
+                controller.canStartTechnologyResearch(
+                        TechnologyType.STONE_MINING
+                )
+        );
+
+        controller.startTechnologyResearch(
+                TechnologyType.STONE_MINING
+        );
+
+        assertEquals(
+                "Research Stone Mining",
+                gameState.getTownHall()
+                        .getActiveCommandName()
         );
     }
 }
