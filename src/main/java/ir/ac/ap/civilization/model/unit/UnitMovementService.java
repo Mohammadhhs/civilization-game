@@ -39,26 +39,19 @@ public final class UnitMovementService {
         }
 
         Optional<HexTile> possibleDestination =
-                gameState
-                        .getGameMap()
-                        .getTile(destination);
+                gameState.getGameMap().getTile(destination);
 
         if (!possibleDestination.isPresent()) {
             return false;
         }
 
         Unit unit = possibleUnit.get();
+        HexTile destinationTile = possibleDestination.get();
 
-        HexTile destinationTile =
-                possibleDestination.get();
-
-        return unit
-                .getPosition()
-                .isAdjacentTo(destination) &&
+        return unit.getPosition().isAdjacentTo(destination) &&
                 destinationTile.isNormallyPassable() &&
                 unit.canSpendActionPoints(
-                        destinationTile
-                                .getBaseMovementCost()
+                        destinationTile.getBaseMovementCost()
                 );
     }
 
@@ -66,18 +59,14 @@ public final class UnitMovementService {
             int unitId
     ) {
         Unit unit = getRequiredUnit(unitId);
-
-        GameMap gameMap =
-                gameState.getGameMap();
+        GameMap gameMap = gameState.getGameMap();
 
         List<HexTile> validDestinations =
                 new ArrayList<>();
 
-        for (HexTile neighbor :
-                gameMap.getValidNeighbors(
-                        unit.getPosition()
-                )) {
-
+        for (HexTile neighbor : gameMap.getValidNeighbors(
+                unit.getPosition()
+        )) {
             if (neighbor.isNormallyPassable() &&
                     unit.canSpendActionPoints(
                             neighbor.getBaseMovementCost()
@@ -102,29 +91,22 @@ public final class UnitMovementService {
         );
 
         Unit unit = getRequiredUnit(unitId);
-
         HexTile destinationTile =
                 getRequiredDestination(destination);
 
         validateAdjacency(unit, destination);
-
-        validatePassableDestination(
-                destinationTile
-        );
+        validatePassableDestination(destinationTile);
 
         int movementCost =
                 destinationTile.getBaseMovementCost();
 
-        validateActionPoints(
-                unit,
-                movementCost
-        );
+        validateActionPoints(unit, movementCost);
 
-        HexCoordinate start =
-                unit.getPosition();
+        HexCoordinate start = unit.getPosition();
 
         unit.spendActionPoints(movementCost);
         unit.moveTo(destination);
+        gameState.refreshVisibility();
 
         return new UnitMovementResult(
                 unit.getId(),
@@ -154,8 +136,7 @@ public final class UnitMovementService {
                 .getTile(destination)
                 .orElseThrow(
                         () -> new IllegalArgumentException(
-                                "Movement destination " +
-                                        "is outside the map"
+                                "Movement destination is outside the map"
                         )
                 );
     }
@@ -164,13 +145,9 @@ public final class UnitMovementService {
             Unit unit,
             HexCoordinate destination
     ) {
-        if (!unit
-                .getPosition()
-                .isAdjacentTo(destination)) {
-
+        if (!unit.getPosition().isAdjacentTo(destination)) {
             throw new IllegalArgumentException(
-                    "A unit can move only " +
-                            "to an adjacent hex"
+                    "A unit can move only to an adjacent hex"
             );
         }
     }
@@ -180,8 +157,7 @@ public final class UnitMovementService {
     ) {
         if (!destinationTile.isNormallyPassable()) {
             throw new IllegalStateException(
-                    "The destination terrain " +
-                            "is not passable"
+                    "The destination terrain is not passable"
             );
         }
     }
@@ -192,9 +168,8 @@ public final class UnitMovementService {
     ) {
         if (!unit.canSpendActionPoints(movementCost)) {
             throw new IllegalStateException(
-                    "Unit does not have enough " +
-                            "action points to enter " +
-                            "the destination terrain"
+                    "Unit does not have enough action points " +
+                            "to enter the destination terrain"
             );
         }
     }

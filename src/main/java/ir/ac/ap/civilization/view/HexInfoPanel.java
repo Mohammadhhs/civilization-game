@@ -3,6 +3,8 @@ package ir.ac.ap.civilization.view;
 import ir.ac.ap.civilization.model.map.HexTile;
 import ir.ac.ap.civilization.model.map.NaturalResourceType;
 import ir.ac.ap.civilization.model.map.TerrainType;
+import ir.ac.ap.civilization.model.unit.Builder;
+import ir.ac.ap.civilization.model.unit.Unit;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -23,15 +25,14 @@ public final class HexInfoPanel extends JPanel {
 
     private static final Color BACKGROUND_COLOR =
             new Color(30, 35, 43);
-
     private static final Color CARD_COLOR =
             new Color(45, 52, 62);
-
     private static final Color TEXT_COLOR =
             new Color(235, 239, 244);
-
-    private static final Color ACCENT_COLOR =
+    private static final Color HEX_ACCENT_COLOR =
             new Color(255, 214, 64);
+    private static final Color UNIT_ACCENT_COLOR =
+            new Color(91, 192, 235);
 
     private final JLabel coordinateLabel;
     private final JLabel terrainLabel;
@@ -41,16 +42,16 @@ public final class HexInfoPanel extends JPanel {
     private final JLabel constructionLabel;
     private final JLabel structureLabel;
 
-    public HexInfoPanel() {
-        setLayout(
-                new BoxLayout(
-                        this,
-                        BoxLayout.Y_AXIS
-                )
-        );
+    private final JLabel unitTypeLabel;
+    private final JLabel unitIdLabel;
+    private final JLabel actionPointsLabel;
+    private final JLabel visionLabel;
+    private final JLabel chargesLabel;
 
+    public HexInfoPanel() {
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(BACKGROUND_COLOR);
-        setPreferredSize(new Dimension(255, 0));
+        setPreferredSize(new Dimension(270, 0));
 
         setBorder(
                 BorderFactory.createCompoundBorder(
@@ -61,25 +62,9 @@ public final class HexInfoPanel extends JPanel {
                                 0,
                                 new Color(55, 64, 75)
                         ),
-                        new EmptyBorder(18, 14, 18, 14)
+                        new EmptyBorder(10, 12, 10, 12)
                 )
         );
-
-        JLabel titleLabel = new JLabel(
-                "Selected Hex",
-                SwingConstants.CENTER
-        );
-
-        titleLabel.setFont(
-                new Font(
-                        Font.SANS_SERIF,
-                        Font.BOLD,
-                        20
-                )
-        );
-
-        titleLabel.setForeground(ACCENT_COLOR);
-        titleLabel.setAlignmentX(0.5f);
 
         coordinateLabel = createInformationLabel();
         terrainLabel = createInformationLabel();
@@ -89,28 +74,47 @@ public final class HexInfoPanel extends JPanel {
         constructionLabel = createInformationLabel();
         structureLabel = createInformationLabel();
 
-        add(titleLabel);
-        add(Box.createVerticalStrut(18));
-        add(coordinateLabel);
+        unitTypeLabel = createInformationLabel();
+        unitIdLabel = createInformationLabel();
+        actionPointsLabel = createInformationLabel();
+        visionLabel = createInformationLabel();
+        chargesLabel = createInformationLabel();
+
+        add(createSectionTitle(
+                "Selected Hex",
+                HEX_ACCENT_COLOR
+        ));
+        add(Box.createVerticalStrut(7));
+
+        addWithSpacing(coordinateLabel);
+        addWithSpacing(terrainLabel);
+        addWithSpacing(resourcesLabel);
+        addWithSpacing(movementLabel);
+        addWithSpacing(passableLabel);
+        addWithSpacing(constructionLabel);
+        addWithSpacing(structureLabel);
+
         add(Box.createVerticalStrut(8));
-        add(terrainLabel);
-        add(Box.createVerticalStrut(8));
-        add(resourcesLabel);
-        add(Box.createVerticalStrut(8));
-        add(movementLabel);
-        add(Box.createVerticalStrut(8));
-        add(passableLabel);
-        add(Box.createVerticalStrut(8));
-        add(constructionLabel);
-        add(Box.createVerticalStrut(8));
-        add(structureLabel);
+
+        add(createSectionTitle(
+                "Selected Unit",
+                UNIT_ACCENT_COLOR
+        ));
+        add(Box.createVerticalStrut(7));
+
+        addWithSpacing(unitTypeLabel);
+        addWithSpacing(unitIdLabel);
+        addWithSpacing(actionPointsLabel);
+        addWithSpacing(visionLabel);
+        addWithSpacing(chargesLabel);
         add(Box.createVerticalGlue());
 
         clearInformation();
     }
 
-    public void showTile(
+    public void showSelection(
             HexTile tile,
+            Unit unit,
             boolean containsTownHall
     ) {
         Objects.requireNonNull(
@@ -126,62 +130,140 @@ public final class HexInfoPanel extends JPanel {
                         ")"
         );
 
-        terrainLabel.setText(
-                "Terrain: " +
-                        getTerrainDisplayName(
-                                tile.getTerrainType()
-                        )
-        );
+        if (!tile.isDiscovered()) {
+            showUnknownHex();
+        } else {
+            terrainLabel.setText(
+                    "Terrain: " +
+                            getTerrainDisplayName(
+                                    tile.getTerrainType()
+                            )
+            );
 
-        resourcesLabel.setText(
-                "Resources: " +
-                        getResourcesDisplayText(
-                                tile.getNaturalResources()
-                        )
-        );
+            resourcesLabel.setText(
+                    "Resources: " +
+                            getResourcesDisplayText(
+                                    tile.getNaturalResources()
+                            )
+            );
 
-        movementLabel.setText(
-                tile.isNormallyPassable()
-                        ? "Movement cost: " +
-                        tile.getBaseMovementCost() +
-                        " AP"
-                        : "Movement cost: Blocked"
-        );
+            movementLabel.setText(
+                    tile.isNormallyPassable()
+                            ? "Movement: " +
+                            tile.getBaseMovementCost() +
+                            " AP"
+                            : "Movement: Blocked"
+            );
 
-        passableLabel.setText(
-                "Normally passable: " +
-                        getYesNoText(
-                                tile.isNormallyPassable()
-                        )
-        );
+            passableLabel.setText(
+                    "Passable: " +
+                            getYesNoText(
+                                    tile.isNormallyPassable()
+                            )
+            );
 
-        constructionLabel.setText(
-                "Construction allowed: " +
-                        getYesNoText(
-                                tile.isConstructionAllowed()
-                        )
-        );
+            constructionLabel.setText(
+                    "Construction: " +
+                            getYesNoText(
+                                    tile.isConstructionAllowed()
+                            )
+            );
 
-        structureLabel.setText(
-                "Structure: " +
-                        (
-                                containsTownHall
-                                        ? "Town Hall"
-                                        : "None"
-                        )
-        );
+            structureLabel.setText(
+                    "Structure: " +
+                            (containsTownHall
+                                    ? "Town Hall"
+                                    : "None")
+            );
+        }
+
+        showUnit(unit);
     }
 
     public void clearInformation() {
         coordinateLabel.setText("Coordinate: -");
         terrainLabel.setText("Terrain: -");
         resourcesLabel.setText("Resources: -");
-        movementLabel.setText("Movement cost: -");
-        passableLabel.setText("Normally passable: -");
-        constructionLabel.setText(
-                "Construction allowed: -"
-        );
+        movementLabel.setText("Movement: -");
+        passableLabel.setText("Passable: -");
+        constructionLabel.setText("Construction: -");
         structureLabel.setText("Structure: -");
+
+        showUnit(null);
+    }
+
+    private void showUnknownHex() {
+        terrainLabel.setText("Terrain: Unknown");
+        resourcesLabel.setText("Resources: Unknown");
+        movementLabel.setText("Movement: Unknown");
+        passableLabel.setText("Passable: Unknown");
+        constructionLabel.setText("Construction: Unknown");
+        structureLabel.setText("Structure: Unknown");
+    }
+
+    private void showUnit(Unit unit) {
+        if (unit == null) {
+            unitTypeLabel.setText("Type: None");
+            unitIdLabel.setText("Unit ID: -");
+            actionPointsLabel.setText("AP: -");
+            visionLabel.setText("Vision: -");
+            chargesLabel.setText("Builder charges: -");
+            return;
+        }
+
+        unitTypeLabel.setText(
+                "Type: " + unit.getDisplayName()
+        );
+
+        unitIdLabel.setText(
+                "Unit ID: " + unit.getId()
+        );
+
+        actionPointsLabel.setText(
+                "AP: " +
+                        unit.getCurrentActionPoints() +
+                        "/" +
+                        unit.getMaximumActionPoints()
+        );
+
+        visionLabel.setText(
+                "Vision radius: " +
+                        unit.getVisionRadius()
+        );
+
+        if (unit instanceof Builder) {
+            Builder builder = (Builder) unit;
+
+            chargesLabel.setText(
+                    "Builder charges: " +
+                            builder.getRemainingCharges()
+            );
+        } else {
+            chargesLabel.setText(
+                    "Builder charges: N/A"
+            );
+        }
+    }
+
+    private JLabel createSectionTitle(
+            String text,
+            Color color
+    ) {
+        JLabel label =
+                new JLabel(text, SwingConstants.CENTER);
+
+        label.setFont(
+                new Font(
+                        Font.SANS_SERIF,
+                        Font.BOLD,
+                        17
+                )
+        );
+
+        label.setForeground(color);
+        label.setAlignmentX(0.5f);
+
+        return label;
     }
 
     private JLabel createInformationLabel() {
@@ -195,14 +277,13 @@ public final class HexInfoPanel extends JPanel {
                 new Font(
                         Font.SANS_SERIF,
                         Font.PLAIN,
-                        13
+                        12
                 )
         );
 
         label.setHorizontalAlignment(
                 SwingConstants.LEFT
         );
-
         label.setAlignmentX(0.5f);
 
         label.setBorder(
@@ -210,42 +291,41 @@ public final class HexInfoPanel extends JPanel {
                         BorderFactory.createLineBorder(
                                 new Color(62, 71, 83)
                         ),
-                        new EmptyBorder(10, 9, 10, 9)
+                        new EmptyBorder(5, 8, 5, 8)
                 )
         );
 
         label.setMaximumSize(
                 new Dimension(
                         Integer.MAX_VALUE,
-                        42
+                        30
                 )
         );
 
         return label;
     }
 
+    private void addWithSpacing(JLabel label) {
+        add(label);
+        add(Box.createVerticalStrut(4));
+    }
+
     private String getTerrainDisplayName(
-            TerrainType terrainType
+            TerrainType terrain
     ) {
-        switch (terrainType) {
+        switch (terrain) {
             case FOREST:
                 return "Forest";
-
             case PLAIN:
                 return "Plain";
-
             case MOUNTAIN:
                 return "Mountain";
-
             case GRASSLAND:
                 return "Grassland";
-
             case SEA:
                 return "Sea";
-
             case MOUNTAIN_RANGE:
                 return "Mountain Range";
-
             default:
                 throw new IllegalStateException(
                         "Unknown terrain type"
@@ -260,8 +340,7 @@ public final class HexInfoPanel extends JPanel {
             return "None";
         }
 
-        StringBuilder builder =
-                new StringBuilder();
+        StringBuilder builder = new StringBuilder();
 
         for (NaturalResourceType resource : resources) {
             if (builder.length() > 0) {
@@ -282,28 +361,20 @@ public final class HexInfoPanel extends JPanel {
         switch (resource) {
             case WOOD:
                 return "Wood";
-
             case STONE:
                 return "Stone";
-
             case IRON:
                 return "Iron";
-
             case WHEAT:
                 return "Wheat";
-
             case RICE:
                 return "Rice";
-
             case CATTLE:
                 return "Cattle";
-
             case SHEEP:
                 return "Sheep";
-
             case FISH:
                 return "Fish";
-
             default:
                 throw new IllegalStateException(
                         "Unknown natural resource"

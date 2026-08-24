@@ -1,6 +1,7 @@
 package ir.ac.ap.civilization.model.game;
 
 import ir.ac.ap.civilization.model.building.TownHall;
+import ir.ac.ap.civilization.model.map.FogOfWarService;
 import ir.ac.ap.civilization.model.map.GameMap;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.HexMapGenerator;
@@ -31,6 +32,7 @@ public final class GameState {
     private final TownHall townHall;
     private final GameMap gameMap;
     private final List<Unit> units;
+    private final FogOfWarService fogOfWarService;
 
     private int turnNumber;
     private int nextUnitId;
@@ -43,12 +45,13 @@ public final class GameState {
         this.turnNumber = 1;
         this.nextUnitId = 1;
         this.townHall = new TownHall();
-        this.gameMap =
-                new HexMapGenerator().generate(mapSeed);
+        this.gameMap = new HexMapGenerator().generate(mapSeed);
         this.units = new ArrayList<>();
+        this.fogOfWarService = new FogOfWarService();
 
         initializeStartingResources();
         initializeStartingUnits();
+        refreshVisibility();
     }
 
     public int getTurnNumber() {
@@ -89,8 +92,7 @@ public final class GameState {
                 "Coordinate cannot be null"
         );
 
-        List<Unit> matchingUnits =
-                new ArrayList<>();
+        List<Unit> matchingUnits = new ArrayList<>();
 
         for (Unit unit : units) {
             if (unit.getPosition().equals(coordinate)) {
@@ -98,14 +100,19 @@ public final class GameState {
             }
         }
 
-        return Collections.unmodifiableList(
-                matchingUnits
+        return Collections.unmodifiableList(matchingUnits);
+    }
+
+    public void refreshVisibility() {
+        fogOfWarService.refreshVisibility(
+                gameMap,
+                TOWN_HALL_COORDINATE,
+                units
         );
     }
 
     void incrementTurnNumber() {
-        turnNumber =
-                Math.incrementExact(turnNumber);
+        turnNumber = Math.incrementExact(turnNumber);
     }
 
     void restoreAllUnitActionPoints() {
@@ -118,25 +125,10 @@ public final class GameState {
         ResourceStockpile stockpile =
                 townHall.getStockpile();
 
-        stockpile.add(
-                ResourceType.FOOD,
-                STARTING_FOOD
-        );
-
-        stockpile.add(
-                ResourceType.WOOD,
-                STARTING_WOOD
-        );
-
-        stockpile.add(
-                ResourceType.STONE,
-                STARTING_STONE
-        );
-
-        stockpile.add(
-                ResourceType.IRON,
-                STARTING_IRON
-        );
+        stockpile.add(ResourceType.FOOD, STARTING_FOOD);
+        stockpile.add(ResourceType.WOOD, STARTING_WOOD);
+        stockpile.add(ResourceType.STONE, STARTING_STONE);
+        stockpile.add(ResourceType.IRON, STARTING_IRON);
     }
 
     private void initializeStartingUnits() {
@@ -190,8 +182,7 @@ public final class GameState {
 
         if (!startingTile.isNormallyPassable()) {
             throw new IllegalStateException(
-                    "Starting unit must be placed " +
-                            "on a passable tile"
+                    "Starting unit must be placed on a passable tile"
             );
         }
 
@@ -206,10 +197,7 @@ public final class GameState {
 
     private int createNextUnitId() {
         int createdId = nextUnitId;
-
-        nextUnitId =
-                Math.incrementExact(nextUnitId);
-
+        nextUnitId = Math.incrementExact(nextUnitId);
         return createdId;
     }
 }

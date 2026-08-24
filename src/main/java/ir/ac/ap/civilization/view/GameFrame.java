@@ -19,47 +19,54 @@ public final class GameFrame extends JFrame {
     private final HexInfoPanel hexInfoPanel;
 
     public GameFrame(GameController controller) {
-        super("Civilization Game");
+        super("Civilization - Advanced Programming Project");
 
         this.controller = Objects.requireNonNull(
                 controller,
                 "Game controller cannot be null"
         );
 
-        GameState gameState =
-                controller.getGameState();
-
         this.hudPanel = new HudPanel();
-
-        this.hexMapPanel = new HexMapPanel(
-                gameState.getGameMap(),
-                gameState.getTownHallCoordinate()
-        );
-
+        this.hexMapPanel = new HexMapPanel(controller);
         this.hexInfoPanel = new HexInfoPanel();
 
         configureFrame();
-        createLayout();
-        wireActions();
-        wireMapSelection();
-        refreshHud();
+        arrangeComponents();
+        connectViewActions();
+        refreshView();
     }
 
     private void configureFrame() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        setSize(1200, 760);
         setMinimumSize(new Dimension(960, 640));
+        setSize(1200, 760);
         setLocationRelativeTo(null);
     }
 
-    private void createLayout() {
+    private void arrangeComponents() {
         add(hudPanel, BorderLayout.NORTH);
         add(hexMapPanel, BorderLayout.CENTER);
         add(hexInfoPanel, BorderLayout.EAST);
     }
 
-    private void wireActions() {
+    private void connectViewActions() {
+        GameState gameState = controller.getGameState();
+
+        hexMapPanel.setSelectionListener(
+                (tile, unit) -> hexInfoPanel.showSelection(
+                        tile,
+                        unit,
+                        tile.getCoordinate().equals(
+                                gameState.getTownHallCoordinate()
+                        )
+                )
+        );
+
+        hexMapPanel.setStatusListener(
+                hudPanel::setStatusMessage
+        );
+
         hudPanel.setStartUpgradeAction(
                 event -> executeAction(
                         controller::startTownHallUpgrade,
@@ -70,29 +77,17 @@ public final class GameFrame extends JFrame {
         hudPanel.setCancelCommandAction(
                 event -> executeAction(
                         controller::cancelTownHallCommand,
-                        "Command cancelled; resources were not refunded"
+                        "Current Town Hall command cancelled"
                 )
         );
 
         hudPanel.setEndTurnAction(
                 event -> executeAction(
-                        controller::endTurn,
-                        "Turn completed"
-                )
-        );
-    }
-
-    private void wireMapSelection() {
-        GameState gameState =
-                controller.getGameState();
-
-        hexMapPanel.setSelectionListener(
-                tile -> hexInfoPanel.showTile(
-                        tile,
-                        tile.getCoordinate().equals(
-                                gameState
-                                        .getTownHallCoordinate()
-                        )
+                        () -> {
+                            controller.endTurn();
+                            hexMapPanel.refreshFromModel();
+                        },
+                        "Turn completed and unit AP restored"
                 )
         );
     }
@@ -103,15 +98,17 @@ public final class GameFrame extends JFrame {
     ) {
         try {
             action.run();
-
+            refreshView();
             hudPanel.setStatusMessage(
                     successMessage,
                     false
             );
         } catch (
-                IllegalStateException |
-                IllegalArgumentException exception
+                IllegalArgumentException |
+                IllegalStateException exception
         ) {
+            refreshView();
+
             hudPanel.setStatusMessage(
                     exception.getMessage(),
                     true
@@ -120,17 +117,17 @@ public final class GameFrame extends JFrame {
             JOptionPane.showMessageDialog(
                     this,
                     exception.getMessage(),
-                    "Action unavailable",
+                    "Action is not available",
                     JOptionPane.WARNING_MESSAGE
             );
-        } finally {
-            refreshHud();
         }
     }
 
-    private void refreshHud() {
+    private void refreshView() {
         hudPanel.refresh(
                 controller.getGameState()
         );
+
+        hexMapPanel.repaint();
     }
 }
