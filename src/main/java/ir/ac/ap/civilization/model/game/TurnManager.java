@@ -8,12 +8,17 @@ import java.util.Objects;
 public final class TurnManager {
 
     private final GameState gameState;
+    private final ResourceBuildingService
+            resourceBuildingService;
 
     public TurnManager(GameState gameState) {
         this.gameState = Objects.requireNonNull(
                 gameState,
                 "Game state cannot be null"
         );
+
+        this.resourceBuildingService =
+                new ResourceBuildingService(gameState);
     }
 
     public void endTurn() {
@@ -26,6 +31,8 @@ public final class TurnManager {
         gameState.restoreAllUnitActionPoints();
 
         townHall.produceBaseResources();
+
+        resourceBuildingService.produceAllResources();
 
         townHall.advanceProductionQueue();
 

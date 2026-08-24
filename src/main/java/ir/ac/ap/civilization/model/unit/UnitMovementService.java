@@ -48,7 +48,8 @@ public final class UnitMovementService {
         Unit unit = possibleUnit.get();
         HexTile destinationTile = possibleDestination.get();
 
-        return unit.getPosition().isAdjacentTo(destination) &&
+        return !isStationedWorker(unit) &&
+                unit.getPosition().isAdjacentTo(destination) &&
                 destinationTile.isNormallyPassable() &&
                 unit.canSpendActionPoints(
                         destinationTile.getBaseMovementCost()
@@ -63,6 +64,10 @@ public final class UnitMovementService {
 
         List<HexTile> validDestinations =
                 new ArrayList<>();
+
+        if (isStationedWorker(unit)) {
+            return Collections.emptyList();
+        }
 
         for (HexTile neighbor : gameMap.getValidNeighbors(
                 unit.getPosition()
@@ -94,6 +99,7 @@ public final class UnitMovementService {
         HexTile destinationTile =
                 getRequiredDestination(destination);
 
+        validateWorkerIsNotStationed(unit);
         validateAdjacency(unit, destination);
         validatePassableDestination(destinationTile);
 
@@ -170,6 +176,19 @@ public final class UnitMovementService {
             throw new IllegalStateException(
                     "Unit does not have enough action points " +
                             "to enter the destination terrain"
+            );
+        }
+    }
+
+    private boolean isStationedWorker(Unit unit) {
+        return unit instanceof Worker &&
+                ((Worker) unit).isStationed();
+    }
+
+    private void validateWorkerIsNotStationed(Unit unit) {
+        if (isStationedWorker(unit)) {
+            throw new IllegalStateException(
+                    "Stationed Worker must leave the building before moving"
             );
         }
     }

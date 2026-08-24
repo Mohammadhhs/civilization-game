@@ -1,10 +1,12 @@
 package ir.ac.ap.civilization.view;
 
+import ir.ac.ap.civilization.model.building.ResourceBuilding;
 import ir.ac.ap.civilization.model.map.HexTile;
 import ir.ac.ap.civilization.model.map.NaturalResourceType;
 import ir.ac.ap.civilization.model.map.TerrainType;
 import ir.ac.ap.civilization.model.unit.Builder;
 import ir.ac.ap.civilization.model.unit.Unit;
+import ir.ac.ap.civilization.model.unit.Worker;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -49,13 +51,7 @@ public final class HexInfoPanel extends JPanel {
     private final JLabel chargesLabel;
 
     public HexInfoPanel() {
-        setLayout(
-                new BoxLayout(
-                        this,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(BACKGROUND_COLOR);
         setPreferredSize(new Dimension(300, 0));
 
@@ -68,12 +64,7 @@ public final class HexInfoPanel extends JPanel {
                                 0,
                                 new Color(55, 64, 75)
                         ),
-                        new EmptyBorder(
-                                10,
-                                12,
-                                10,
-                                12
-                        )
+                        new EmptyBorder(10, 12, 10, 12)
                 )
         );
 
@@ -96,7 +87,6 @@ public final class HexInfoPanel extends JPanel {
                 "Selected Hex",
                 HEX_ACCENT_COLOR
         ));
-
         add(Box.createVerticalStrut(7));
         addWithSpacing(coordinateLabel);
         addWithSpacing(terrainLabel);
@@ -108,12 +98,10 @@ public final class HexInfoPanel extends JPanel {
         addWithSpacing(structureLabel);
 
         add(Box.createVerticalStrut(8));
-
         add(createSectionTitle(
                 "Selected Unit",
                 UNIT_ACCENT_COLOR
         ));
-
         add(Box.createVerticalStrut(7));
         addWithSpacing(unitTypeLabel);
         addWithSpacing(unitIdLabel);
@@ -128,6 +116,7 @@ public final class HexInfoPanel extends JPanel {
     public void showSelection(
             HexTile tile,
             Unit unit,
+            ResourceBuilding resourceBuilding,
             boolean containsTownHall
     ) {
         Objects.requireNonNull(
@@ -168,8 +157,8 @@ public final class HexInfoPanel extends JPanel {
             movementLabel.setText(
                     tile.isNormallyPassable()
                             ? "Movement: " +
-                            tile.getBaseMovementCost() +
-                            " AP"
+                                    tile.getBaseMovementCost() +
+                                    " AP"
                             : "Movement: Blocked"
             );
 
@@ -191,7 +180,9 @@ public final class HexInfoPanel extends JPanel {
                     "Structure: " +
                             (containsTownHall
                                     ? "Town Hall"
-                                    : "None")
+                                    : getBuildingDisplayText(
+                                            resourceBuilding
+                                    ))
             );
         }
 
@@ -207,7 +198,6 @@ public final class HexInfoPanel extends JPanel {
         passableLabel.setText("Passable: -");
         constructionLabel.setText("Construction: -");
         structureLabel.setText("Structure: -");
-
         showUnit(null);
     }
 
@@ -227,27 +217,22 @@ public final class HexInfoPanel extends JPanel {
             unitIdLabel.setText("Unit ID: -");
             actionPointsLabel.setText("AP: -");
             visionLabel.setText("Vision: -");
-            chargesLabel.setText(
-                    "Builder charges: -"
-            );
+            chargesLabel.setText("Builder charges: -");
             return;
         }
 
         unitTypeLabel.setText(
                 "Type: " + unit.getDisplayName()
         );
-
         unitIdLabel.setText(
                 "Unit ID: " + unit.getId()
         );
-
         actionPointsLabel.setText(
                 "AP: " +
                         unit.getCurrentActionPoints() +
                         "/" +
                         unit.getMaximumActionPoints()
         );
-
         visionLabel.setText(
                 "Vision radius: " +
                         unit.getVisionRadius()
@@ -255,10 +240,18 @@ public final class HexInfoPanel extends JPanel {
 
         if (unit instanceof Builder) {
             Builder builder = (Builder) unit;
-
             chargesLabel.setText(
                     "Builder charges: " +
                             builder.getRemainingCharges()
+            );
+        } else if (unit instanceof Worker) {
+            Worker worker = (Worker) unit;
+
+            chargesLabel.setText(
+                    worker.isStationed()
+                            ? "Stationed: Building #" +
+                                    worker.getStationedBuildingId()
+                            : "Stationed: No"
             );
         } else {
             chargesLabel.setText(
@@ -267,16 +260,28 @@ public final class HexInfoPanel extends JPanel {
         }
     }
 
+    private String getBuildingDisplayText(
+            ResourceBuilding resourceBuilding
+    ) {
+        if (resourceBuilding == null) {
+            return "None";
+        }
+
+        return resourceBuilding.getBuildingType()
+                .getDisplayName() +
+                " (workers " +
+                resourceBuilding.getStationedWorkerCount() +
+                "/" +
+                resourceBuilding.getWorkerCapacity() +
+                ")";
+    }
+
     private JLabel createSectionTitle(
             String text,
             Color color
     ) {
         JLabel label =
-                new JLabel(
-                        text,
-                        SwingConstants.CENTER
-                );
-
+                new JLabel(text, SwingConstants.CENTER);
         label.setFont(
                 new Font(
                         Font.SANS_SERIF,
@@ -284,20 +289,16 @@ public final class HexInfoPanel extends JPanel {
                         17
                 )
         );
-
         label.setForeground(color);
         label.setAlignmentX(0.5f);
-
         return label;
     }
 
     private JLabel createInformationLabel() {
         JLabel label = new JLabel();
-
         label.setOpaque(true);
         label.setBackground(CARD_COLOR);
         label.setForeground(TEXT_COLOR);
-
         label.setFont(
                 new Font(
                         Font.SANS_SERIF,
@@ -305,34 +306,19 @@ public final class HexInfoPanel extends JPanel {
                         12
                 )
         );
-
-        label.setHorizontalAlignment(
-                SwingConstants.LEFT
-        );
-
+        label.setHorizontalAlignment(SwingConstants.LEFT);
         label.setAlignmentX(0.5f);
-
         label.setBorder(
                 BorderFactory.createCompoundBorder(
                         BorderFactory.createLineBorder(
                                 new Color(62, 71, 83)
                         ),
-                        new EmptyBorder(
-                                5,
-                                8,
-                                5,
-                                8
-                        )
+                        new EmptyBorder(5, 8, 5, 8)
                 )
         );
-
         label.setMaximumSize(
-                new Dimension(
-                        Integer.MAX_VALUE,
-                        30
-                )
+                new Dimension(Integer.MAX_VALUE, 30)
         );
-
         return label;
     }
 
@@ -364,15 +350,12 @@ public final class HexInfoPanel extends JPanel {
         }
     }
 
-    private String getResourcesDisplayText(
-            HexTile tile
-    ) {
+    private String getResourcesDisplayText(HexTile tile) {
         if (tile.getNaturalResources().isEmpty()) {
             return "None";
         }
 
-        StringBuilder builder =
-                new StringBuilder();
+        StringBuilder builder = new StringBuilder();
 
         for (NaturalResourceType resourceType :
                 tile.getNaturalResources()) {
@@ -384,20 +367,15 @@ public final class HexInfoPanel extends JPanel {
             builder.append(
                     getResourceDisplayName(resourceType)
             );
-
             builder.append(' ');
 
-            if (tile.isNaturalResourceDepleted(
-                    resourceType
-            )) {
+            if (tile.isNaturalResourceDepleted(resourceType)) {
                 builder.append("DEPLETED (0/");
-
                 builder.append(
                         tile.getInitialResourceAmount(
                                 resourceType
                         )
                 );
-
                 builder.append(')');
             } else {
                 builder.append(
@@ -405,9 +383,7 @@ public final class HexInfoPanel extends JPanel {
                                 resourceType
                         )
                 );
-
                 builder.append('/');
-
                 builder.append(
                         tile.getInitialResourceAmount(
                                 resourceType

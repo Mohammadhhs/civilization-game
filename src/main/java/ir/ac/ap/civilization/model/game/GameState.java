@@ -1,11 +1,14 @@
 package ir.ac.ap.civilization.model.game;
 
 import ir.ac.ap.civilization.model.building.TownHall;
+import ir.ac.ap.civilization.model.building.BuildingType;
+import ir.ac.ap.civilization.model.building.ResourceBuilding;
 import ir.ac.ap.civilization.model.map.FogOfWarService;
 import ir.ac.ap.civilization.model.map.GameMap;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.HexMapGenerator;
 import ir.ac.ap.civilization.model.map.HexTile;
+import ir.ac.ap.civilization.model.map.NaturalResourceType;
 import ir.ac.ap.civilization.model.map.PlayerTerritory;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
@@ -26,7 +29,6 @@ public final class GameState {
     private static final int STARTING_WOOD = 80;
     private static final int STARTING_STONE = 60;
     private static final int STARTING_IRON = 0;
-
     private static final int STARTING_TERRITORY_RADIUS = 2;
 
     private static final HexCoordinate TOWN_HALL_COORDINATE =
@@ -36,27 +38,33 @@ public final class GameState {
     private final GameMap gameMap;
     private final PlayerTerritory playerTerritory;
     private final List<Unit> units;
+    private final List<ResourceBuilding> resourceBuildings;
     private final FogOfWarService fogOfWarService;
 
     private int turnNumber;
     private int nextUnitId;
+    private int nextBuildingId;
 
     public GameState() {
         this(HexMapGenerator.DEFAULT_SEED);
     }
 
     public GameState(long mapSeed) {
+        this(new HexMapGenerator().generate(mapSeed));
+    }
+
+    GameState(GameMap gameMap) {
         this.turnNumber = 1;
         this.nextUnitId = 1;
+        this.nextBuildingId = 1;
         this.townHall = new TownHall();
-
-        this.gameMap =
-                new HexMapGenerator().generate(mapSeed);
-
-        this.playerTerritory =
-                new PlayerTerritory(gameMap);
-
+        this.gameMap = Objects.requireNonNull(
+                gameMap,
+                "Game map cannot be null"
+        );
+        this.playerTerritory = new PlayerTerritory(gameMap);
         this.units = new ArrayList<>();
+        this.resourceBuildings = new ArrayList<>();
         this.fogOfWarService = new FogOfWarService();
 
         initializeStartingResources();
@@ -89,6 +97,39 @@ public final class GameState {
         return Collections.unmodifiableList(units);
     }
 
+    public List<ResourceBuilding> getResourceBuildings() {
+        return Collections.unmodifiableList(resourceBuildings);
+    }
+
+    public Optional<ResourceBuilding> getResourceBuildingById(
+            int buildingId
+    ) {
+        for (ResourceBuilding building : resourceBuildings) {
+            if (building.getId() == buildingId) {
+                return Optional.of(building);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    public Optional<ResourceBuilding> getResourceBuildingAt(
+            HexCoordinate coordinate
+    ) {
+        Objects.requireNonNull(
+                coordinate,
+                "Coordinate cannot be null"
+        );
+
+        for (ResourceBuilding building : resourceBuildings) {
+            if (building.getPosition().equals(coordinate)) {
+                return Optional.of(building);
+            }
+        }
+
+        return Optional.empty();
+    }
+
     public Optional<Unit> getUnitById(int unitId) {
         for (Unit unit : units) {
             if (unit.getId() == unitId) {
@@ -115,9 +156,7 @@ public final class GameState {
             }
         }
 
-        return Collections.unmodifiableList(
-                matchingUnits
-        );
+        return Collections.unmodifiableList(matchingUnits);
     }
 
     public void refreshVisibility() {
@@ -129,8 +168,7 @@ public final class GameState {
     }
 
     void incrementTurnNumber() {
-        turnNumber =
-                Math.incrementExact(turnNumber);
+        turnNumber = Math.incrementExact(turnNumber);
     }
 
     void restoreAllUnitActionPoints() {
@@ -139,26 +177,47 @@ public final class GameState {
         }
     }
 
+    ResourceBuilding addResourceBuilding(
+            BuildingType buildingType,
+            HexCoordinate position,
+            NaturalResourceType naturalResourceType
+    ) {
+        if (getResourceBuildingAt(position).isPresent()) {
+            throw new IllegalStateException(
+                    "A resource building already exists on this hex"
+            );
+        }
+
+        ResourceBuilding building = new ResourceBuilding(
+                createNextBuildingId(),
+                buildingType,
+                position,
+                naturalResourceType
+        );
+
+        resourceBuildings.add(building);
+        return building;
+    }
+
+    void removeUnit(Unit unit) {
+        if (!units.remove(Objects.requireNonNull(
+                unit,
+                "Unit cannot be null"
+        ))) {
+            throw new IllegalStateException(
+                    "Unit does not belong to this game"
+            );
+        }
+    }
+
     private void initializeStartingResources() {
         ResourceStockpile stockpile =
                 townHall.getStockpile();
 
-        stockpile.add(
-                ResourceType.FOOD,
-                STARTING_FOOD
-        );
-        stockpile.add(
-                ResourceType.WOOD,
-                STARTING_WOOD
-        );
-        stockpile.add(
-                ResourceType.STONE,
-                STARTING_STONE
-        );
-        stockpile.add(
-                ResourceType.IRON,
-                STARTING_IRON
-        );
+        stockpile.add(ResourceType.FOOD, STARTING_FOOD);
+        stockpile.add(ResourceType.WOOD, STARTING_WOOD);
+        stockpile.add(ResourceType.STONE, STARTING_STONE);
+        stockpile.add(ResourceType.IRON, STARTING_IRON);
     }
 
     private void initializeStartingTerritory() {
@@ -219,15 +278,11 @@ public final class GameState {
 
         if (!startingTile.isNormallyPassable()) {
             throw new IllegalStateException(
-                    "Starting unit must be placed " +
-                            "on a passable tile"
+                    "Starting unit must be placed on a passable tile"
             );
         }
 
-        if (!getUnitsAt(
-                unit.getPosition()
-        ).isEmpty()) {
-
+        if (!getUnitsAt(unit.getPosition()).isEmpty()) {
             throw new IllegalStateException(
                     "Starting units cannot share a tile"
             );
@@ -238,10 +293,13 @@ public final class GameState {
 
     private int createNextUnitId() {
         int createdId = nextUnitId;
+        nextUnitId = Math.incrementExact(nextUnitId);
+        return createdId;
+    }
 
-        nextUnitId =
-                Math.incrementExact(nextUnitId);
-
+    private int createNextBuildingId() {
+        int createdId = nextBuildingId;
+        nextBuildingId = Math.incrementExact(nextBuildingId);
         return createdId;
     }
 }

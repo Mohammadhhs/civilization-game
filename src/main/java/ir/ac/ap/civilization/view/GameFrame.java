@@ -18,6 +18,7 @@ public final class GameFrame extends JFrame {
     private final HexMapPanel hexMapPanel;
     private final HexInfoPanel hexInfoPanel;
     private final TechnologyPanel technologyPanel;
+    private final BuildingActionsPanel buildingActionsPanel;
 
     public GameFrame(GameController controller) {
         super("Civilization - Advanced Programming Project");
@@ -31,6 +32,8 @@ public final class GameFrame extends JFrame {
         this.hexMapPanel = new HexMapPanel(controller);
         this.hexInfoPanel = new HexInfoPanel();
         this.technologyPanel = new TechnologyPanel();
+        this.buildingActionsPanel =
+                new BuildingActionsPanel(controller);
 
         configureFrame();
         arrangeComponents();
@@ -51,19 +54,28 @@ public final class GameFrame extends JFrame {
         add(technologyPanel, BorderLayout.WEST);
         add(hexMapPanel, BorderLayout.CENTER);
         add(hexInfoPanel, BorderLayout.EAST);
+        add(buildingActionsPanel, BorderLayout.SOUTH);
     }
 
     private void connectViewActions() {
         GameState gameState = controller.getGameState();
 
         hexMapPanel.setSelectionListener(
-                (tile, unit) -> hexInfoPanel.showSelection(
-                        tile,
-                        unit,
-                        tile.getCoordinate().equals(
-                                gameState.getTownHallCoordinate()
-                        )
-                )
+                (tile, unit) -> {
+                    hexInfoPanel.showSelection(
+                            tile,
+                            unit,
+                            gameState.getResourceBuildingAt(
+                                    tile.getCoordinate()
+                            ).orElse(null),
+                            tile.getCoordinate().equals(
+                                    gameState
+                                            .getTownHallCoordinate()
+                            )
+                    );
+
+                    buildingActionsPanel.refresh(unit);
+                }
         );
 
         hexMapPanel.setStatusListener(
@@ -100,8 +112,34 @@ public final class GameFrame extends JFrame {
                                 .startTechnologyResearch(
                                         technologyType
                                 ),
-                        technologyType.getDisplayName()
-                                + " research started"
+                        technologyType.getDisplayName() +
+                                " research started"
+                )
+        );
+
+        buildingActionsPanel.setBuildAction(
+                (builderId, buildingType) -> executeAction(
+                        () -> controller
+                                .constructResourceBuilding(
+                                        builderId,
+                                        buildingType
+                                ),
+                        buildingType.getDisplayName() +
+                                " constructed"
+                )
+        );
+
+        buildingActionsPanel.setStationAction(
+                workerId -> executeAction(
+                        () -> controller.stationWorker(workerId),
+                        "Worker stationed"
+                )
+        );
+
+        buildingActionsPanel.setUnstationAction(
+                workerId -> executeAction(
+                        () -> controller.unstationWorker(workerId),
+                        "Worker left the building"
                 )
         );
     }
@@ -113,17 +151,12 @@ public final class GameFrame extends JFrame {
         try {
             action.run();
             refreshView();
-
-            hudPanel.setStatusMessage(
-                    successMessage,
-                    false
-            );
+            hudPanel.setStatusMessage(successMessage, false);
         } catch (
                 IllegalArgumentException |
                 IllegalStateException exception
         ) {
             refreshView();
-
             hudPanel.setStatusMessage(
                     exception.getMessage(),
                     true
@@ -140,11 +173,9 @@ public final class GameFrame extends JFrame {
 
     private void refreshView() {
         hudPanel.refresh(controller.getGameState());
-
         technologyPanel.refresh(
                 controller.getGameState().getTownHall()
         );
-
-        hexMapPanel.repaint();
+        hexMapPanel.refreshFromModel();
     }
 }
