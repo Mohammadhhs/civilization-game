@@ -1,28 +1,22 @@
 package ir.ac.ap.civilization.view;
 
 import ir.ac.ap.civilization.controller.GameController;
+import ir.ac.ap.civilization.model.game.GameState;
 
-import javax.swing.BorderFactory;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridBagLayout;
 import java.util.Objects;
 
 public final class GameFrame extends JFrame {
 
-    private static final Color MAP_BACKGROUND_COLOR =
-            new Color(24, 29, 36);
+    private static final long serialVersionUID = 1L;
 
     private final GameController controller;
     private final HudPanel hudPanel;
+    private final HexMapPanel hexMapPanel;
+    private final HexInfoPanel hexInfoPanel;
 
     public GameFrame(GameController controller) {
         super("Civilization Game");
@@ -32,58 +26,37 @@ public final class GameFrame extends JFrame {
                 "Game controller cannot be null"
         );
 
+        GameState gameState =
+                controller.getGameState();
+
         this.hudPanel = new HudPanel();
+
+        this.hexMapPanel = new HexMapPanel(
+                gameState.getGameMap(),
+                gameState.getTownHallCoordinate()
+        );
+
+        this.hexInfoPanel = new HexInfoPanel();
 
         configureFrame();
         createLayout();
         wireActions();
+        wireMapSelection();
         refreshHud();
     }
 
     private void configureFrame() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        setSize(1100, 700);
-        setMinimumSize(new Dimension(900, 600));
+        setSize(1200, 760);
+        setMinimumSize(new Dimension(960, 640));
         setLocationRelativeTo(null);
     }
 
     private void createLayout() {
         add(hudPanel, BorderLayout.NORTH);
-        add(createMapPlaceholder(), BorderLayout.CENTER);
-    }
-
-    private JPanel createMapPlaceholder() {
-        JPanel mapPanel =
-                new JPanel(new GridBagLayout());
-
-        mapPanel.setBackground(MAP_BACKGROUND_COLOR);
-
-        mapPanel.setBorder(
-                BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(
-                                new Color(55, 64, 75)
-                        ),
-                        new EmptyBorder(20, 20, 20, 20)
-                )
-        );
-
-        JLabel placeholderLabel = new JLabel(
-                "Hex Map - Next Milestone",
-                SwingConstants.CENTER
-        );
-
-        placeholderLabel.setFont(
-                new Font(Font.SANS_SERIF, Font.BOLD, 28)
-        );
-
-        placeholderLabel.setForeground(
-                new Color(130, 142, 155)
-        );
-
-        mapPanel.add(placeholderLabel);
-
-        return mapPanel;
+        add(hexMapPanel, BorderLayout.CENTER);
+        add(hexInfoPanel, BorderLayout.EAST);
     }
 
     private void wireActions() {
@@ -105,6 +78,21 @@ public final class GameFrame extends JFrame {
                 event -> executeAction(
                         controller::endTurn,
                         "Turn completed"
+                )
+        );
+    }
+
+    private void wireMapSelection() {
+        GameState gameState =
+                controller.getGameState();
+
+        hexMapPanel.setSelectionListener(
+                tile -> hexInfoPanel.showTile(
+                        tile,
+                        tile.getCoordinate().equals(
+                                gameState
+                                        .getTownHallCoordinate()
+                        )
                 )
         );
     }
