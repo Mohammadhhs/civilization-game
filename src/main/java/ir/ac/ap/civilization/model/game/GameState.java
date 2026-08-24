@@ -4,8 +4,19 @@ import ir.ac.ap.civilization.model.building.TownHall;
 import ir.ac.ap.civilization.model.map.GameMap;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.HexMapGenerator;
+import ir.ac.ap.civilization.model.map.HexTile;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
+import ir.ac.ap.civilization.model.unit.Builder;
+import ir.ac.ap.civilization.model.unit.Explorer;
+import ir.ac.ap.civilization.model.unit.Unit;
+import ir.ac.ap.civilization.model.unit.Worker;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 public final class GameState {
 
@@ -17,9 +28,12 @@ public final class GameState {
     private static final HexCoordinate TOWN_HALL_COORDINATE =
             new HexCoordinate(0, 0);
 
-    private int turnNumber;
     private final TownHall townHall;
     private final GameMap gameMap;
+    private final List<Unit> units;
+
+    private int turnNumber;
+    private int nextUnitId;
 
     public GameState() {
         this(HexMapGenerator.DEFAULT_SEED);
@@ -27,10 +41,14 @@ public final class GameState {
 
     public GameState(long mapSeed) {
         this.turnNumber = 1;
+        this.nextUnitId = 1;
         this.townHall = new TownHall();
-        this.gameMap = new HexMapGenerator().generate(mapSeed);
+        this.gameMap =
+                new HexMapGenerator().generate(mapSeed);
+        this.units = new ArrayList<>();
 
         initializeStartingResources();
+        initializeStartingUnits();
     }
 
     public int getTurnNumber() {
@@ -49,8 +67,51 @@ public final class GameState {
         return TOWN_HALL_COORDINATE;
     }
 
+    public List<Unit> getUnits() {
+        return Collections.unmodifiableList(units);
+    }
+
+    public Optional<Unit> getUnitById(int unitId) {
+        for (Unit unit : units) {
+            if (unit.getId() == unitId) {
+                return Optional.of(unit);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    public List<Unit> getUnitsAt(
+            HexCoordinate coordinate
+    ) {
+        Objects.requireNonNull(
+                coordinate,
+                "Coordinate cannot be null"
+        );
+
+        List<Unit> matchingUnits =
+                new ArrayList<>();
+
+        for (Unit unit : units) {
+            if (unit.getPosition().equals(coordinate)) {
+                matchingUnits.add(unit);
+            }
+        }
+
+        return Collections.unmodifiableList(
+                matchingUnits
+        );
+    }
+
     void incrementTurnNumber() {
-        turnNumber = Math.incrementExact(turnNumber);
+        turnNumber =
+                Math.incrementExact(turnNumber);
+    }
+
+    void restoreAllUnitActionPoints() {
+        for (Unit unit : units) {
+            unit.restoreActionPoints();
+        }
     }
 
     private void initializeStartingResources() {
@@ -76,5 +137,79 @@ public final class GameState {
                 ResourceType.IRON,
                 STARTING_IRON
         );
+    }
+
+    private void initializeStartingUnits() {
+        List<HexCoordinate> startingPositions =
+                TOWN_HALL_COORDINATE.getNeighbors();
+
+        addStartingUnit(
+                new Builder(
+                        createNextUnitId(),
+                        startingPositions.get(0)
+                )
+        );
+
+        addStartingUnit(
+                new Builder(
+                        createNextUnitId(),
+                        startingPositions.get(1)
+                )
+        );
+
+        addStartingUnit(
+                new Worker(
+                        createNextUnitId(),
+                        startingPositions.get(2)
+                )
+        );
+
+        addStartingUnit(
+                new Worker(
+                        createNextUnitId(),
+                        startingPositions.get(3)
+                )
+        );
+
+        addStartingUnit(
+                new Explorer(
+                        createNextUnitId(),
+                        startingPositions.get(4)
+                )
+        );
+    }
+
+    private void addStartingUnit(Unit unit) {
+        HexTile startingTile = gameMap
+                .getTile(unit.getPosition())
+                .orElseThrow(
+                        () -> new IllegalStateException(
+                                "Starting unit is outside the map"
+                        )
+                );
+
+        if (!startingTile.isNormallyPassable()) {
+            throw new IllegalStateException(
+                    "Starting unit must be placed " +
+                            "on a passable tile"
+            );
+        }
+
+        if (!getUnitsAt(unit.getPosition()).isEmpty()) {
+            throw new IllegalStateException(
+                    "Starting units cannot share a tile"
+            );
+        }
+
+        units.add(unit);
+    }
+
+    private int createNextUnitId() {
+        int createdId = nextUnitId;
+
+        nextUnitId =
+                Math.incrementExact(nextUnitId);
+
+        return createdId;
     }
 }
