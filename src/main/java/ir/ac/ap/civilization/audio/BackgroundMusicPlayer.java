@@ -10,7 +10,7 @@ import java.io.InputStream;
 public final class BackgroundMusicPlayer implements AutoCloseable {
 
     private static final String SOUNDTRACK_PATH =
-            "/audio/background.wav";
+            "/audio/Gamer.wav";
 
     private Clip clip;
     private int volumePercent;

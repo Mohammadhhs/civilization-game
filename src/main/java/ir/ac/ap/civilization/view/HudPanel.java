@@ -10,17 +10,21 @@ import ir.ac.ap.civilization.model.game.ResourceFlowForecast;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
 import ir.ac.ap.civilization.model.unit.UnitType;
+import ir.ac.ap.civilization.view.asset.GameImageRepository;
+import ir.ac.ap.civilization.view.asset.ImageScaler;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
@@ -61,12 +65,21 @@ public final class HudPanel extends JPanel {
     private final JLabel statusLabel;
 
     private final Map<ResourceType, JLabel> resourceLabels;
+    private final GameImageRepository imageRepository;
 
     private final JButton startUpgradeButton;
     private final JButton cancelCommandButton;
     private final JButton endTurnButton;
 
     public HudPanel() {
+        this(new GameImageRepository());
+    }
+
+    public HudPanel(GameImageRepository imageRepository) {
+        this.imageRepository = Objects.requireNonNull(
+                imageRepository,
+                "Image repository cannot be null"
+        );
         setLayout(new BorderLayout(10, 10));
         setBackground(BACKGROUND_COLOR);
         setBorder(new EmptyBorder(12, 12, 12, 12));
@@ -222,6 +235,13 @@ public final class HudPanel extends JPanel {
                         townHall.getCurrentLevel()
                                 .getDisplayName()
         );
+        setLabelImage(
+                townHallLevelLabel,
+                imageRepository.getTownHallImage(
+                        townHall.getCurrentLevel()
+                ),
+                30
+        );
 
         townHallHpLabel.setText(
                 "HP: " +
@@ -305,6 +325,12 @@ public final class HudPanel extends JPanel {
                     createInformationLabel(
                             getResourceDisplayName(resourceType)
                     );
+
+            setLabelImage(
+                    resourceLabel,
+                    imageRepository.getStockpileImage(resourceType),
+                    24
+            );
 
             resourceLabels.put(
                     resourceType,
@@ -419,6 +445,18 @@ public final class HudPanel extends JPanel {
         );
 
         return button;
+    }
+
+    private void setLabelImage(
+            JLabel label,
+            BufferedImage image,
+            int size
+    ) {
+        BufferedImage scaled = ImageScaler.fit(image, size, size);
+        label.setIcon(
+                scaled == null ? null : new ImageIcon(scaled)
+        );
+        label.setIconTextGap(8);
     }
 
     private void refreshResourceLabels(

@@ -4,6 +4,8 @@ import ir.ac.ap.civilization.controller.GameController;
 import ir.ac.ap.civilization.model.game.GameState;
 import ir.ac.ap.civilization.model.resource.ResourceType;
 import ir.ac.ap.civilization.model.unit.UnitType;
+import ir.ac.ap.civilization.view.asset.GameImageRepository;
+import ir.ac.ap.civilization.view.asset.ImageComboBoxRenderer;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -38,6 +40,17 @@ public final class UnitProductionPanel extends JPanel {
     private Consumer<UnitType> trainAction;
 
     public UnitProductionPanel(GameController controller) {
+        this(controller, new GameImageRepository());
+    }
+
+    public UnitProductionPanel(
+            GameController controller,
+            GameImageRepository imageRepository
+    ) {
+        Objects.requireNonNull(
+                imageRepository,
+                "Image repository cannot be null"
+        );
         this.controller = Objects.requireNonNull(
                 controller,
                 "Game controller cannot be null"
@@ -65,6 +78,12 @@ public final class UnitProductionPanel extends JPanel {
         );
 
         unitTypeBox = new JComboBox<>(UnitType.values());
+        unitTypeBox.setRenderer(
+                new ImageComboBoxRenderer<UnitType>(
+                        imageRepository::getUnitImage
+                )
+        );
+        unitTypeBox.setMaximumRowCount(UnitType.values().length);
         costLabel = new JLabel();
         costLabel.setForeground(TEXT_COLOR);
         costLabel.setFont(

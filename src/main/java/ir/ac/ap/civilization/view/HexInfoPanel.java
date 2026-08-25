@@ -2,23 +2,28 @@ package ir.ac.ap.civilization.view;
 
 import ir.ac.ap.civilization.model.building.ResourceBuilding;
 import ir.ac.ap.civilization.model.building.Settlement;
+import ir.ac.ap.civilization.model.building.TownHallLevel;
 import ir.ac.ap.civilization.model.map.HexTile;
 import ir.ac.ap.civilization.model.map.NaturalResourceType;
 import ir.ac.ap.civilization.model.map.TerrainType;
 import ir.ac.ap.civilization.model.unit.Builder;
 import ir.ac.ap.civilization.model.unit.Unit;
 import ir.ac.ap.civilization.model.unit.Worker;
+import ir.ac.ap.civilization.view.asset.GameImageRepository;
+import ir.ac.ap.civilization.view.asset.ImageScaler;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
+import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.image.BufferedImage;
 import java.util.Objects;
 
 public final class HexInfoPanel extends JPanel {
@@ -37,6 +42,7 @@ public final class HexInfoPanel extends JPanel {
             new Color(91, 192, 235);
 
     private final JLabel coordinateLabel;
+    private final JLabel previewLabel;
     private final JLabel terrainLabel;
     private final JLabel resourcesLabel;
     private final JLabel territoryLabel;
@@ -50,8 +56,17 @@ public final class HexInfoPanel extends JPanel {
     private final JLabel actionPointsLabel;
     private final JLabel visionLabel;
     private final JLabel chargesLabel;
+    private final GameImageRepository imageRepository;
 
     public HexInfoPanel() {
+        this(new GameImageRepository());
+    }
+
+    public HexInfoPanel(GameImageRepository imageRepository) {
+        this.imageRepository = Objects.requireNonNull(
+                imageRepository,
+                "Image repository cannot be null"
+        );
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(BACKGROUND_COLOR);
         setPreferredSize(new Dimension(300, 520));
@@ -68,6 +83,18 @@ public final class HexInfoPanel extends JPanel {
                         new EmptyBorder(10, 12, 10, 12)
                 )
         );
+
+        previewLabel = new JLabel("No image", SwingConstants.CENTER);
+        previewLabel.setAlignmentX(0.5f);
+        previewLabel.setForeground(TEXT_COLOR);
+        previewLabel.setOpaque(true);
+        previewLabel.setBackground(CARD_COLOR);
+        previewLabel.setBorder(
+                BorderFactory.createLineBorder(new Color(62, 71, 83))
+        );
+        previewLabel.setMinimumSize(new Dimension(96, 82));
+        previewLabel.setPreferredSize(new Dimension(96, 82));
+        previewLabel.setMaximumSize(new Dimension(120, 82));
 
         coordinateLabel = createInformationLabel();
         terrainLabel = createInformationLabel();
@@ -89,6 +116,8 @@ public final class HexInfoPanel extends JPanel {
                 HEX_ACCENT_COLOR
         ));
         add(Box.createVerticalStrut(7));
+        add(previewLabel);
+        add(Box.createVerticalStrut(8));
         addWithSpacing(coordinateLabel);
         addWithSpacing(terrainLabel);
         addWithSpacing(resourcesLabel);
@@ -121,9 +150,36 @@ public final class HexInfoPanel extends JPanel {
             Settlement settlement,
             boolean containsTownHall
     ) {
+        showSelection(
+                tile,
+                unit,
+                resourceBuilding,
+                settlement,
+                containsTownHall,
+                TownHallLevel.BASE_CAMP
+        );
+    }
+
+    public void showSelection(
+            HexTile tile,
+            Unit unit,
+            ResourceBuilding resourceBuilding,
+            Settlement settlement,
+            boolean containsTownHall,
+            TownHallLevel townHallLevel
+    ) {
         Objects.requireNonNull(
                 tile,
                 "Hex tile cannot be null"
+        );
+
+        refreshPreview(
+                tile,
+                unit,
+                resourceBuilding,
+                settlement,
+                containsTownHall,
+                townHallLevel
         );
 
         coordinateLabel.setText(
@@ -193,6 +249,8 @@ public final class HexInfoPanel extends JPanel {
     }
 
     public void clearInformation() {
+        previewLabel.setIcon(null);
+        previewLabel.setText("No image");
         coordinateLabel.setText("Coordinate: -");
         terrainLabel.setText("Terrain: -");
         resourcesLabel.setText("Resources: -");
@@ -202,6 +260,45 @@ public final class HexInfoPanel extends JPanel {
         constructionLabel.setText("Construction: -");
         structureLabel.setText("Structure: -");
         showUnit(null);
+    }
+
+    private void refreshPreview(
+            HexTile tile,
+            Unit unit,
+            ResourceBuilding resourceBuilding,
+            Settlement settlement,
+            boolean containsTownHall,
+            TownHallLevel townHallLevel
+    ) {
+        BufferedImage image = null;
+
+        if (tile.isDiscovered()) {
+            if (unit != null) {
+                image = imageRepository.getUnitImage(unit.getUnitType());
+            } else if (containsTownHall) {
+                image = imageRepository.getTownHallImage(townHallLevel);
+            } else if (resourceBuilding != null) {
+                image = imageRepository.getBuildingImage(
+                        resourceBuilding.getBuildingType()
+                );
+            } else if (settlement != null) {
+                image = imageRepository.getPopulationSettlementImage();
+            } else if (!tile.getNaturalResources().isEmpty()) {
+                image = imageRepository.getNaturalResourceImage(
+                        tile.getNaturalResources().iterator().next()
+                );
+            } else {
+                image = imageRepository.getTerrainImage(
+                        tile.getTerrainType()
+                );
+            }
+        }
+
+        BufferedImage scaled = ImageScaler.fit(image, 88, 72);
+        previewLabel.setIcon(
+                scaled == null ? null : new ImageIcon(scaled)
+        );
+        previewLabel.setText(scaled == null ? "No image" : "");
     }
 
     private void showUnknownHex() {

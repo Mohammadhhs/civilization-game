@@ -7,6 +7,8 @@ import ir.ac.ap.civilization.model.unit.Builder;
 import ir.ac.ap.civilization.model.unit.BorderExpander;
 import ir.ac.ap.civilization.model.unit.Unit;
 import ir.ac.ap.civilization.model.unit.Worker;
+import ir.ac.ap.civilization.view.asset.GameImageRepository;
+import ir.ac.ap.civilization.view.asset.ImageComboBoxRenderer;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -56,6 +58,17 @@ public final class BuildingActionsPanel extends JPanel {
     private IntConsumer unstationAction;
 
     public BuildingActionsPanel(GameController controller) {
+        this(controller, new GameImageRepository());
+    }
+
+    public BuildingActionsPanel(
+            GameController controller,
+            GameImageRepository imageRepository
+    ) {
+        Objects.requireNonNull(
+                imageRepository,
+                "Image repository cannot be null"
+        );
         this.controller = Objects.requireNonNull(
                 controller,
                 "Game controller cannot be null"
@@ -93,6 +106,11 @@ public final class BuildingActionsPanel extends JPanel {
 
         buildingTypeBox = new JComboBox<>(
                 BuildingType.values()
+        );
+        buildingTypeBox.setRenderer(
+                new ImageComboBoxRenderer<BuildingType>(
+                        imageRepository::getBuildingImage
+                )
         );
         buildingTypeBox.setPreferredSize(
                 new Dimension(170, 34)

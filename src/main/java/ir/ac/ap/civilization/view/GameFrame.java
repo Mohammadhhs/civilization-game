@@ -2,6 +2,7 @@ package ir.ac.ap.civilization.view;
 
 import ir.ac.ap.civilization.controller.GameController;
 import ir.ac.ap.civilization.model.game.GameState;
+import ir.ac.ap.civilization.view.asset.GameImageRepository;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -16,6 +17,7 @@ public final class GameFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
     private final GameController controller;
+    private final GameImageRepository imageRepository;
     private final HudPanel hudPanel;
     private final HexMapPanel hexMapPanel;
     private final HexInfoPanel hexInfoPanel;
@@ -31,26 +33,28 @@ public final class GameFrame extends JFrame {
                 "Game controller cannot be null"
         );
 
-        this.hudPanel = new HudPanel();
-        this.hexMapPanel = new HexMapPanel(controller);
-        this.hexInfoPanel = new HexInfoPanel();
+        this.imageRepository = new GameImageRepository();
+        this.hudPanel = new HudPanel(imageRepository);
+        this.hexMapPanel = new HexMapPanel(controller, imageRepository);
+        this.hexInfoPanel = new HexInfoPanel(imageRepository);
         this.technologyPanel = new TechnologyPanel();
         this.buildingActionsPanel =
-                new BuildingActionsPanel(controller);
+                new BuildingActionsPanel(controller, imageRepository);
         this.unitProductionPanel =
-                new UnitProductionPanel(controller);
+                new UnitProductionPanel(controller, imageRepository);
 
         configureFrame();
         arrangeComponents();
         connectViewActions();
         refreshView();
+        showAssetStatus();
     }
 
     private void configureFrame() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        setMinimumSize(new Dimension(1280, 720));
-        setSize(1400, 800);
+        setMinimumSize(new Dimension(1366, 768));
+        setSize(1500, 900);
         setLocationRelativeTo(null);
     }
 
@@ -99,7 +103,8 @@ public final class GameFrame extends JFrame {
                             tile.getCoordinate().equals(
                                     gameState
                                             .getTownHallCoordinate()
-                            )
+                            ),
+                            gameState.getTownHall().getCurrentLevel()
                     );
 
                     buildingActionsPanel.refresh(unit);
@@ -253,5 +258,37 @@ public final class GameFrame extends JFrame {
         );
         unitProductionPanel.refresh();
         hexMapPanel.refreshFromModel();
+    }
+
+    private void showAssetStatus() {
+        int missingCount = imageRepository
+                .getMissingRequiredPaths()
+                .size();
+
+        if (missingCount == 0) {
+            hudPanel.setStatusMessage(
+                    imageRepository.getLoadedRequiredImageCount() +
+                            " image assets loaded",
+                    false
+            );
+            hudPanel.setToolTipText(
+                    "All 27 required image assets were loaded"
+            );
+        } else {
+            hudPanel.setStatusMessage(
+                    missingCount +
+                            " image asset(s) missing; vector fallback active",
+                    true
+            );
+            hudPanel.setToolTipText(
+                    "<html>Missing image assets:<br>" +
+                            String.join(
+                                    "<br>",
+                                    imageRepository
+                                            .getMissingRequiredPaths()
+                            ) +
+                            "</html>"
+            );
+        }
     }
 }
