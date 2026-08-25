@@ -4,14 +4,17 @@ import ir.ac.ap.civilization.model.building.BuildingType;
 import ir.ac.ap.civilization.model.building.ResourceBuilding;
 import ir.ac.ap.civilization.model.building.Settlement;
 import ir.ac.ap.civilization.model.game.GameState;
+import ir.ac.ap.civilization.model.game.BorderExpansionService;
 import ir.ac.ap.civilization.model.game.ResourceBuildingService;
 import ir.ac.ap.civilization.model.game.SettlementConstructionService;
 import ir.ac.ap.civilization.model.game.TurnManager;
+import ir.ac.ap.civilization.model.game.UnitProductionService;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.HexTile;
 import ir.ac.ap.civilization.model.technology.TechnologyType;
 import ir.ac.ap.civilization.model.unit.UnitMovementResult;
 import ir.ac.ap.civilization.model.unit.UnitMovementService;
+import ir.ac.ap.civilization.model.unit.UnitType;
 
 import java.util.List;
 import java.util.Objects;
@@ -25,6 +28,8 @@ public final class GameController {
             resourceBuildingService;
     private final SettlementConstructionService
             settlementConstructionService;
+    private final UnitProductionService unitProductionService;
+    private final BorderExpansionService borderExpansionService;
 
     public GameController(GameState gameState) {
         this.gameState = Objects.requireNonNull(
@@ -42,6 +47,12 @@ public final class GameController {
 
         this.settlementConstructionService =
                 new SettlementConstructionService(gameState);
+
+        this.unitProductionService =
+                new UnitProductionService(gameState);
+
+        this.borderExpansionService =
+                new BorderExpansionService(gameState);
     }
 
     public GameState getGameState() {
@@ -113,6 +124,26 @@ public final class GameController {
     public Settlement constructSettlement(int builderId) {
         return settlementConstructionService
                 .construct(builderId);
+    }
+
+    public boolean canStartUnitProduction(UnitType unitType) {
+        return unitProductionService.canStart(unitType);
+    }
+
+    public void startUnitProduction(UnitType unitType) {
+        unitProductionService.start(unitType);
+    }
+
+    public boolean canExpandBorder(int unitId) {
+        return borderExpansionService.canExpand(unitId);
+    }
+
+    public int expandBorder(int unitId) {
+        return borderExpansionService.expand(unitId);
+    }
+
+    public int getIdleUnitCount() {
+        return gameState.getIdleUnits().size();
     }
 
     public boolean canStationWorker(int workerId) {

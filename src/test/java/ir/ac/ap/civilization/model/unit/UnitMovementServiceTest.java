@@ -17,17 +17,13 @@ class UnitMovementServiceTest {
     @Test
     void validMovementChangesPositionAndConsumesTerrainCost() {
         GameState gameState = new GameState();
-
         UnitMovementService movementService =
                 new UnitMovementService(gameState);
 
-        Unit builder = gameState
-                .getUnitById(1)
+        Unit builder = gameState.getUnitById(1)
                 .orElseThrow(AssertionError::new);
 
-        HexCoordinate start =
-                builder.getPosition();
-
+        HexCoordinate start = builder.getPosition();
         HexCoordinate destination =
                 gameState.getTownHallCoordinate();
 
@@ -37,46 +33,22 @@ class UnitMovementServiceTest {
                         destination
                 );
 
-        assertEquals(
-                start,
-                result.getStart()
-        );
+        assertEquals(start, result.getStart());
+        assertEquals(destination, result.getDestination());
+        assertEquals(1, result.getActionPointCost());
+        assertEquals(4, result.getRemainingActionPoints());
 
-        assertEquals(
-                destination,
-                result.getDestination()
-        );
-
-        assertEquals(
-                1,
-                result.getActionPointCost()
-        );
-
-        assertEquals(
-                4,
-                result.getRemainingActionPoints()
-        );
-
-        assertEquals(
-                destination,
-                builder.getPosition()
-        );
-
-        assertEquals(
-                4,
-                builder.getCurrentActionPoints()
-        );
+        assertEquals(destination, builder.getPosition());
+        assertEquals(4, builder.getCurrentActionPoints());
     }
 
     @Test
     void forestDestinationUsesForestMovementCost() {
         GameState gameState = new GameState();
-
         UnitMovementService movementService =
                 new UnitMovementService(gameState);
 
-        Unit secondBuilder = gameState
-                .getUnitById(2)
+        Unit secondBuilder = gameState.getUnitById(2)
                 .orElseThrow(AssertionError::new);
 
         HexCoordinate startingForest =
@@ -88,36 +60,21 @@ class UnitMovementServiceTest {
                         startingForest
                 );
 
-        assertEquals(
-                2,
-                result.getActionPointCost()
-        );
-
-        assertEquals(
-                3,
-                secondBuilder.getCurrentActionPoints()
-        );
-
-        assertEquals(
-                startingForest,
-                secondBuilder.getPosition()
-        );
+        assertEquals(2, result.getActionPointCost());
+        assertEquals(3, secondBuilder.getCurrentActionPoints());
+        assertEquals(startingForest, secondBuilder.getPosition());
     }
 
     @Test
     void nonAdjacentMovementIsRejectedAtomically() {
         GameState gameState = new GameState();
-
         UnitMovementService movementService =
                 new UnitMovementService(gameState);
 
-        Unit builder = gameState
-                .getUnitById(1)
+        Unit builder = gameState.getUnitById(1)
                 .orElseThrow(AssertionError::new);
 
-        HexCoordinate originalPosition =
-                builder.getPosition();
-
+        HexCoordinate originalPosition = builder.getPosition();
         int originalActionPoints =
                 builder.getCurrentActionPoints();
 
@@ -129,11 +86,7 @@ class UnitMovementServiceTest {
                 )
         );
 
-        assertEquals(
-                originalPosition,
-                builder.getPosition()
-        );
-
+        assertEquals(originalPosition, builder.getPosition());
         assertEquals(
                 originalActionPoints,
                 builder.getCurrentActionPoints()
@@ -143,17 +96,13 @@ class UnitMovementServiceTest {
     @Test
     void destinationOutsideMapIsRejectedAtomically() {
         GameState gameState = new GameState();
-
         UnitMovementService movementService =
                 new UnitMovementService(gameState);
 
-        Unit builder = gameState
-                .getUnitById(1)
+        Unit builder = gameState.getUnitById(1)
                 .orElseThrow(AssertionError::new);
 
-        HexCoordinate originalPosition =
-                builder.getPosition();
-
+        HexCoordinate originalPosition = builder.getPosition();
         int originalActionPoints =
                 builder.getCurrentActionPoints();
 
@@ -165,11 +114,7 @@ class UnitMovementServiceTest {
                 )
         );
 
-        assertEquals(
-                originalPosition,
-                builder.getPosition()
-        );
-
+        assertEquals(originalPosition, builder.getPosition());
         assertEquals(
                 originalActionPoints,
                 builder.getCurrentActionPoints()
@@ -179,12 +124,10 @@ class UnitMovementServiceTest {
     @Test
     void impassableTerrainIsRejectedAtomically() {
         GameState gameState = new GameState();
-
         UnitMovementService movementService =
                 new UnitMovementService(gameState);
 
-        Unit explorer = gameState
-                .getUnitById(5)
+        Unit explorer = gameState.getUnitById(5)
                 .orElseThrow(AssertionError::new);
 
         HexCoordinate[] movementPair =
@@ -194,9 +137,7 @@ class UnitMovementServiceTest {
 
         explorer.moveTo(movementPair[0]);
 
-        HexCoordinate originalPosition =
-                explorer.getPosition();
-
+        HexCoordinate originalPosition = explorer.getPosition();
         int originalActionPoints =
                 explorer.getCurrentActionPoints();
 
@@ -208,11 +149,7 @@ class UnitMovementServiceTest {
                 )
         );
 
-        assertEquals(
-                originalPosition,
-                explorer.getPosition()
-        );
-
+        assertEquals(originalPosition, explorer.getPosition());
         assertEquals(
                 originalActionPoints,
                 explorer.getCurrentActionPoints()
@@ -222,20 +159,17 @@ class UnitMovementServiceTest {
     @Test
     void insufficientActionPointsRejectMovementAtomically() {
         GameState gameState = new GameState();
-
         UnitMovementService movementService =
                 new UnitMovementService(gameState);
 
-        Unit builder = gameState
-                .getUnitById(1)
+        Unit builder = gameState.getUnitById(1)
                 .orElseThrow(AssertionError::new);
 
         builder.spendActionPoints(
                 builder.getMaximumActionPoints()
         );
 
-        HexCoordinate originalPosition =
-                builder.getPosition();
+        HexCoordinate originalPosition = builder.getPosition();
 
         assertThrows(
                 IllegalStateException.class,
@@ -245,57 +179,38 @@ class UnitMovementServiceTest {
                 )
         );
 
-        assertEquals(
-                originalPosition,
-                builder.getPosition()
-        );
-
-        assertEquals(
-                0,
-                builder.getCurrentActionPoints()
-        );
+        assertEquals(originalPosition, builder.getPosition());
+        assertEquals(0, builder.getCurrentActionPoints());
     }
 
     @Test
     void validDestinationsAreAdjacentPassableAndAffordable() {
         GameState gameState = new GameState();
-
         UnitMovementService movementService =
                 new UnitMovementService(gameState);
 
-        Unit worker = gameState
-                .getUnitById(3)
+        Unit worker = gameState.getUnitById(3)
                 .orElseThrow(AssertionError::new);
 
         List<HexTile> validDestinations =
-                movementService
-                        .getValidMovementDestinations(
-                                worker.getId()
-                        );
+                movementService.getValidMovementDestinations(
+                        worker.getId()
+                );
 
         assertFalse(validDestinations.isEmpty());
 
         for (HexTile destination : validDestinations) {
             assertTrue(
-                    worker
-                            .getPosition()
-                            .isAdjacentTo(
-                                    destination
-                                            .getCoordinate()
-                            )
-            );
-
-            assertTrue(
-                    destination.isNormallyPassable()
-            );
-
-            assertTrue(
-                    worker.canSpendActionPoints(
-                            destination
-                                    .getBaseMovementCost()
+                    worker.getPosition().isAdjacentTo(
+                            destination.getCoordinate()
                     )
             );
-
+            assertTrue(destination.isNormallyPassable());
+            assertTrue(
+                    worker.canSpendActionPoints(
+                            destination.getBaseMovementCost()
+                    )
+            );
             assertTrue(
                     movementService.canMoveUnit(
                             worker.getId(),
@@ -308,7 +223,6 @@ class UnitMovementServiceTest {
     @Test
     void unknownUnitCannotMove() {
         GameState gameState = new GameState();
-
         UnitMovementService movementService =
                 new UnitMovementService(gameState);
 
@@ -343,12 +257,9 @@ class UnitMovementServiceTest {
             }
 
             for (HexTile neighbor :
-                    gameState
-                            .getGameMap()
-                            .getValidNeighbors(
-                                    blockedTile
-                                            .getCoordinate()
-                            )) {
+                    gameState.getGameMap().getValidNeighbors(
+                            blockedTile.getCoordinate()
+                    )) {
 
                 if (neighbor.isNormallyPassable()) {
                     return new HexCoordinate[]{
@@ -360,8 +271,7 @@ class UnitMovementServiceTest {
         }
 
         throw new AssertionError(
-                "Generated map has no reachable " +
-                        "blocked terrain"
+                "Generated map has no reachable blocked terrain"
         );
     }
 }

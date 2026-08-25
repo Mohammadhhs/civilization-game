@@ -115,11 +115,9 @@ public final class TechnologyPanel extends JPanel {
 
     private JScrollPane createTechnologyList() {
         JPanel listPanel = new JPanel();
-
         listPanel.setLayout(
                 new BoxLayout(listPanel, BoxLayout.Y_AXIS)
         );
-
         listPanel.setBackground(BACKGROUND_COLOR);
 
         for (TechnologyType technologyType :
@@ -132,7 +130,6 @@ public final class TechnologyPanel extends JPanel {
         scrollPane.setBorder(null);
         scrollPane.getViewport().setBackground(BACKGROUND_COLOR);
         scrollPane.getVerticalScrollBar().setUnitIncrement(14);
-
         scrollPane.setHorizontalScrollBarPolicy(
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         );
@@ -144,13 +141,10 @@ public final class TechnologyPanel extends JPanel {
             TechnologyType technologyType
     ) {
         JPanel card = new JPanel();
-
         card.setLayout(
                 new BoxLayout(card, BoxLayout.Y_AXIS)
         );
-
         card.setBackground(CARD_COLOR);
-
         card.setBorder(
                 BorderFactory.createCompoundBorder(
                         BorderFactory.createLineBorder(
@@ -159,9 +153,7 @@ public final class TechnologyPanel extends JPanel {
                         new EmptyBorder(9, 9, 9, 9)
                 )
         );
-
         card.setAlignmentX(LEFT_ALIGNMENT);
-
         card.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 125)
         );
@@ -169,53 +161,37 @@ public final class TechnologyPanel extends JPanel {
         JButton researchButton = new JButton(
                 technologyType.getDisplayName()
         );
-
         researchButton.setAlignmentX(LEFT_ALIGNMENT);
-
         researchButton.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 32)
         );
-
         researchButton.setFocusPainted(false);
-
         researchButton.addActionListener(
                 event -> researchAction.accept(technologyType)
         );
 
         JLabel detailsLabel = new JLabel(
-                "<html>"
-                        + technologyType.getResearchTurns()
-                        + " turn(s) | "
-                        + formatCost(technologyType)
-                        + "</html>"
+                "<html>" +
+                        technologyType.getResearchTurns() +
+                        " turn(s) | " +
+                        formatCost(technologyType) +
+                        "</html>"
         );
-
         detailsLabel.setForeground(TEXT_COLOR);
-
         detailsLabel.setFont(
                 new Font(Font.SANS_SERIF, Font.PLAIN, 12)
         );
-
         detailsLabel.setAlignmentX(LEFT_ALIGNMENT);
 
         JLabel statusLabel = new JLabel("Locked");
         statusLabel.setForeground(LOCKED_COLOR);
-
         statusLabel.setFont(
                 new Font(Font.SANS_SERIF, Font.BOLD, 12)
         );
-
         statusLabel.setAlignmentX(LEFT_ALIGNMENT);
 
-        researchButtons.put(
-                technologyType,
-                researchButton
-        );
-
-        statusLabels.put(
-                technologyType,
-                statusLabel
-        );
+        researchButtons.put(technologyType, researchButton);
+        statusLabels.put(technologyType, statusLabel);
 
         card.add(researchButton);
         card.add(Box.createVerticalStrut(7));
@@ -230,11 +206,8 @@ public final class TechnologyPanel extends JPanel {
             TownHall townHall,
             TechnologyType technologyType
     ) {
-        JButton button =
-                researchButtons.get(technologyType);
-
-        JLabel statusLabel =
-                statusLabels.get(technologyType);
+        JButton button = researchButtons.get(technologyType);
+        JLabel statusLabel = statusLabels.get(technologyType);
 
         button.setEnabled(
                 townHall.canStartResearch(technologyType)
@@ -243,9 +216,7 @@ public final class TechnologyPanel extends JPanel {
         if (townHall.hasTechnology(technologyType)) {
             statusLabel.setText("Completed");
             statusLabel.setForeground(READY_COLOR);
-            button.setToolTipText(
-                    "Research already completed"
-            );
+            button.setToolTipText("Research already completed");
             return;
         }
 
@@ -253,30 +224,22 @@ public final class TechnologyPanel extends JPanel {
                 .filter(technologyType::equals)
                 .isPresent()) {
             statusLabel.setText(
-                    "In progress: "
-                            + townHall
-                            .getRemainingProductionTurns()
-                            + " turn(s)"
+                    "In progress: " +
+                            townHall.getRemainingProductionTurns() +
+                            " turn(s)"
             );
-
             statusLabel.setForeground(ACTIVE_COLOR);
-            button.setToolTipText(
-                    "Research is in progress"
-            );
+            button.setToolTipText("Research is in progress");
             return;
         }
 
         if (!townHall.getTechnologyManager()
                 .arePrerequisitesCompleted(technologyType)) {
             statusLabel.setText(
-                    "Locked: "
-                            + formatPrerequisites(
-                            technologyType
-                    )
+                    "Locked: " +
+                            formatPrerequisites(technologyType)
             );
-
             statusLabel.setForeground(LOCKED_COLOR);
-
             button.setToolTipText(
                     "Complete the required technologies first"
             );
@@ -286,7 +249,6 @@ public final class TechnologyPanel extends JPanel {
         if (townHall.isBusy()) {
             statusLabel.setText("Town Hall is busy");
             statusLabel.setForeground(ACTIVE_COLOR);
-
             button.setToolTipText(
                     "Only one Town Hall command can be active"
             );
@@ -298,7 +260,6 @@ public final class TechnologyPanel extends JPanel {
         )) {
             statusLabel.setText("Not enough resources");
             statusLabel.setForeground(LOCKED_COLOR);
-
             button.setToolTipText(
                     "The research cost is not available"
             );
@@ -307,9 +268,7 @@ public final class TechnologyPanel extends JPanel {
 
         statusLabel.setText("Ready");
         statusLabel.setForeground(READY_COLOR);
-        button.setToolTipText(
-                "Start technology research"
-        );
+        button.setToolTipText("Start technology research");
     }
 
     private String formatCost(
@@ -352,9 +311,7 @@ public final class TechnologyPanel extends JPanel {
                 result.append(", ");
             }
 
-            result.append(
-                    prerequisite.getDisplayName()
-            );
+            result.append(prerequisite.getDisplayName());
         }
 
         return result.toString();

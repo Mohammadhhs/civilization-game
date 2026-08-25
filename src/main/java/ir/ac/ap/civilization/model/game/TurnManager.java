@@ -2,6 +2,7 @@ package ir.ac.ap.civilization.model.game;
 
 import ir.ac.ap.civilization.model.building.TownHall;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
+import ir.ac.ap.civilization.model.production.ProductionCommand;
 
 import java.util.Objects;
 
@@ -11,6 +12,7 @@ public final class TurnManager {
     private final ResourceBuildingService
             resourceBuildingService;
     private final EconomyService economyService;
+    private final UnitProductionService unitProductionService;
 
     public TurnManager(GameState gameState) {
         this.gameState = Objects.requireNonNull(
@@ -23,6 +25,9 @@ public final class TurnManager {
 
         this.economyService =
                 new EconomyService(gameState);
+
+        this.unitProductionService =
+                new UnitProductionService(gameState);
     }
 
     public void endTurn() {
@@ -38,7 +43,12 @@ public final class TurnManager {
 
         resourceBuildingService.produceAllResources();
 
-        townHall.advanceProductionQueue();
+        ProductionCommand completedCommand =
+                townHall.advanceProductionQueue();
+
+        unitProductionService.deployCompletedCommand(
+                completedCommand
+        );
 
         economyService.applyEndTurnCosts();
 

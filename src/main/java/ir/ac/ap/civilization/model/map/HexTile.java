@@ -13,7 +13,6 @@ public final class HexTile {
 
     private final HexCoordinate coordinate;
     private final TerrainType terrainType;
-
     private final EnumMap<
             NaturalResourceType,
             NaturalResourceDeposit

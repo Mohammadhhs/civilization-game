@@ -1,8 +1,7 @@
 package ir.ac.ap;
 
-import ir.ac.ap.civilization.controller.GameController;
-import ir.ac.ap.civilization.model.game.GameState;
-import ir.ac.ap.civilization.view.GameFrame;
+import ir.ac.ap.civilization.audio.BackgroundMusicPlayer;
+import ir.ac.ap.civilization.view.MainMenuFrame;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -16,15 +15,16 @@ public final class Main {
         SwingUtilities.invokeLater(() -> {
             applySystemLookAndFeel();
 
-            GameState gameState = new GameState();
+            BackgroundMusicPlayer musicPlayer =
+                    new BackgroundMusicPlayer();
 
-            GameController controller =
-                    new GameController(gameState);
+            musicPlayer.start();
 
-            GameFrame gameFrame =
-                    new GameFrame(controller);
+            Runtime.getRuntime().addShutdownHook(
+                    new Thread(musicPlayer::close)
+            );
 
-            gameFrame.setVisible(true);
+            new MainMenuFrame(musicPlayer).setVisible(true);
         });
     }
 

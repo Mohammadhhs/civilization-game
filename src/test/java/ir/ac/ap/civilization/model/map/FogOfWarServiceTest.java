@@ -17,9 +17,7 @@ class FogOfWarServiceTest {
         GameState gameState = new GameState();
 
         HexTile townHallTile = gameState.getGameMap()
-                .getTile(
-                        gameState.getTownHallCoordinate()
-                )
+                .getTile(gameState.getTownHallCoordinate())
                 .orElseThrow(AssertionError::new);
 
         HexTile farTile = gameState.getGameMap()
@@ -28,21 +26,16 @@ class FogOfWarServiceTest {
 
         assertTrue(townHallTile.isVisible());
         assertTrue(townHallTile.isDiscovered());
-
         assertFalse(farTile.isVisible());
         assertFalse(farTile.isDiscovered());
     }
 
     @Test
     void discoveredTileShouldStayDiscoveredAfterLeavingVision() {
-        GameMap gameMap =
-                new HexMapGenerator().generate(1234L);
-
+        GameMap gameMap = new HexMapGenerator().generate(1234L);
         FogOfWarService fogOfWarService =
                 new FogOfWarService();
-
-        HexCoordinate townHall =
-                new HexCoordinate(0, 0);
+        HexCoordinate townHall = new HexCoordinate(0, 0);
 
         Unit firstExplorer = new Explorer(
                 1,
@@ -79,7 +72,6 @@ class FogOfWarServiceTest {
 
         assertFalse(oldVisionTile.isVisible());
         assertTrue(oldVisionTile.isDiscovered());
-
         assertTrue(newVisionTile.isVisible());
         assertTrue(newVisionTile.isDiscovered());
     }

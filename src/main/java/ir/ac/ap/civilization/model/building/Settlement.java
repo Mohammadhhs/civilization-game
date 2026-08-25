@@ -12,6 +12,7 @@ public final class Settlement implements MaintainedBuilding {
 
     public static final int UNIT_CAP_BONUS = 5;
     public static final int CONSTRUCTION_ACTION_POINT_COST = 3;
+    private static final int VISION_RADIUS = 2;
 
     private static final Map<ResourceType, Integer>
             CONSTRUCTION_COST = createCost(60, 50, 20);
@@ -50,6 +51,11 @@ public final class Settlement implements MaintainedBuilding {
     @Override
     public HexCoordinate getPosition() {
         return position;
+    }
+
+    @Override
+    public int getVisionRadius() {
+        return VISION_RADIUS;
     }
 
     public int getUnitCapBonus() {

@@ -134,11 +134,9 @@ class TechnologyManagerTest {
         manager.completeResearch(
                 TechnologyType.STONE_MINING
         );
-
         manager.completeResearch(
                 TechnologyType.IRON_MINING
         );
-
         manager.completeResearch(
                 TechnologyType.PROFESSIONAL_TOOLS
         );

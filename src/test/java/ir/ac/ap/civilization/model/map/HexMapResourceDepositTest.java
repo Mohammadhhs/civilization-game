@@ -9,14 +9,9 @@ class HexMapResourceDepositTest {
 
     @Test
     void sameSeedShouldCreateSameDepositAmounts() {
-        HexMapGenerator generator =
-                new HexMapGenerator();
-
-        GameMap firstMap =
-                generator.generate(7, 987654L);
-
-        GameMap secondMap =
-                generator.generate(7, 987654L);
+        HexMapGenerator generator = new HexMapGenerator();
+        GameMap firstMap = generator.generate(7, 987654L);
+        GameMap secondMap = generator.generate(7, 987654L);
 
         for (HexTile firstTile : firstMap.getTiles()) {
             HexTile secondTile = secondMap
@@ -27,14 +22,12 @@ class HexMapResourceDepositTest {
                     firstTile.getNaturalResources()) {
 
                 assertEquals(
-                        firstTile
-                                .getInitialResourceAmount(
-                                        resourceType
-                                ),
-                        secondTile
-                                .getInitialResourceAmount(
-                                        resourceType
-                                )
+                        firstTile.getInitialResourceAmount(
+                                resourceType
+                        ),
+                        secondTile.getInitialResourceAmount(
+                                resourceType
+                        )
                 );
             }
         }
@@ -43,22 +36,16 @@ class HexMapResourceDepositTest {
     @Test
     void generatedDepositsShouldStartPositiveAndFull() {
         GameMap gameMap =
-                new HexMapGenerator().generate(
-                        7,
-                        222L
-                );
+                new HexMapGenerator().generate(7, 222L);
 
         for (HexTile tile : gameMap.getTiles()) {
             for (NaturalResourceType resourceType :
                     tile.getNaturalResources()) {
 
                 int initialAmount =
-                        tile.getInitialResourceAmount(
-                                resourceType
-                        );
+                        tile.getInitialResourceAmount(resourceType);
 
                 assertTrue(initialAmount > 0);
-
                 assertEquals(
                         initialAmount,
                         tile.getRemainingResourceAmount(

@@ -709,6 +709,8 @@ public final class HexMapPanel extends JPanel {
                 return new Color(70, 145, 205);
             case EXPLORER:
                 return new Color(151, 82, 184);
+            case BORDER_EXPANDER:
+                return new Color(227, 176, 64);
             default:
                 throw new IllegalStateException("Unknown unit type");
         }

@@ -134,7 +134,6 @@ class HexMapGeneratorTest {
                         1,
                         resources.size()
                 );
-
                 assertTrue(
                         resources.contains(
                                 NaturalResourceType.WOOD

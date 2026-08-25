@@ -13,33 +13,19 @@ class PlayerTerritoryTest {
     void claimAreaShouldClaimCenterAndValidNeighbors() {
         GameMap gameMap =
                 new HexMapGenerator().generate(3, 123L);
-
         PlayerTerritory territory =
                 new PlayerTerritory(gameMap);
+        HexCoordinate center = new HexCoordinate(0, 0);
 
-        HexCoordinate center =
-                new HexCoordinate(0, 0);
-
-        assertEquals(
-                7,
-                territory.claimArea(center, 1)
-        );
-
+        assertEquals(7, territory.claimArea(center, 1));
         assertEquals(7, territory.size());
         assertTrue(territory.contains(center));
 
-        for (HexCoordinate coordinate :
-                center.getNeighbors()) {
-
-            assertTrue(
-                    territory.contains(coordinate)
-            );
-
+        for (HexCoordinate coordinate : center.getNeighbors()) {
+            assertTrue(territory.contains(coordinate));
             assertTrue(
                     gameMap.getTile(coordinate)
-                            .orElseThrow(
-                                    AssertionError::new
-                            )
+                            .orElseThrow(AssertionError::new)
                             .isInsidePlayerTerritory()
             );
         }
@@ -49,23 +35,12 @@ class PlayerTerritoryTest {
     void claimingOwnedAreaAgainShouldNotDuplicateTiles() {
         GameMap gameMap =
                 new HexMapGenerator().generate(3, 123L);
-
         PlayerTerritory territory =
                 new PlayerTerritory(gameMap);
+        HexCoordinate center = new HexCoordinate(0, 0);
 
-        HexCoordinate center =
-                new HexCoordinate(0, 0);
-
-        assertEquals(
-                7,
-                territory.claimArea(center, 1)
-        );
-
-        assertEquals(
-                0,
-                territory.claimArea(center, 1)
-        );
-
+        assertEquals(7, territory.claimArea(center, 1));
+        assertEquals(0, territory.claimArea(center, 1));
         assertEquals(7, territory.size());
     }
 
@@ -73,14 +48,11 @@ class PlayerTerritoryTest {
     void coordinatesOutsideMapShouldBeRejected() {
         GameMap gameMap =
                 new HexMapGenerator().generate(2, 123L);
-
         PlayerTerritory territory =
                 new PlayerTerritory(gameMap);
 
         assertFalse(
-                territory.contains(
-                        new HexCoordinate(5, 0)
-                )
+                territory.contains(new HexCoordinate(5, 0))
         );
 
         assertThrows(
@@ -95,19 +67,14 @@ class PlayerTerritoryTest {
     void returnedCoordinatesShouldBeUnmodifiable() {
         GameMap gameMap =
                 new HexMapGenerator().generate(2, 123L);
-
         PlayerTerritory territory =
                 new PlayerTerritory(gameMap);
 
-        territory.claim(
-                new HexCoordinate(0, 0)
-        );
+        territory.claim(new HexCoordinate(0, 0));
 
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> territory
-                        .getOwnedCoordinates()
-                        .clear()
+                () -> territory.getOwnedCoordinates().clear()
         );
     }
 }

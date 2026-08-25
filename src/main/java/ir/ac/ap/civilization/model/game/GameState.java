@@ -17,6 +17,8 @@ import ir.ac.ap.civilization.model.resource.ResourceType;
 import ir.ac.ap.civilization.model.unit.Builder;
 import ir.ac.ap.civilization.model.unit.Explorer;
 import ir.ac.ap.civilization.model.unit.Unit;
+import ir.ac.ap.civilization.model.unit.UnitFactory;
+import ir.ac.ap.civilization.model.unit.UnitType;
 import ir.ac.ap.civilization.model.unit.Worker;
 
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ public final class GameState {
     private final List<ResourceBuilding> resourceBuildings;
     private final List<Settlement> settlements;
     private final FogOfWarService fogOfWarService;
+    private final UnitFactory unitFactory;
     private final EconomyStatus economyStatus;
 
     private int turnNumber;
@@ -72,6 +75,7 @@ public final class GameState {
         this.resourceBuildings = new ArrayList<>();
         this.settlements = new ArrayList<>();
         this.fogOfWarService = new FogOfWarService();
+        this.unitFactory = new UnitFactory();
         this.economyStatus = new EconomyStatus();
 
         initializeStartingResources();
@@ -118,6 +122,42 @@ public final class GameState {
 
     public int getActiveUnitCount() {
         return units.size();
+    }
+
+    public int getActiveUnitCount(UnitType unitType) {
+        Objects.requireNonNull(
+                unitType,
+                "Unit type cannot be null"
+        );
+
+        int count = 0;
+
+        for (Unit unit : units) {
+            if (unit.getUnitType() == unitType) {
+                count = Math.incrementExact(count);
+            }
+        }
+
+        return count;
+    }
+
+    public List<Unit> getIdleUnits() {
+        List<Unit> idleUnits = new ArrayList<>();
+
+        for (Unit unit : units) {
+            if (!unit.hasActionPoints()) {
+                continue;
+            }
+
+            if (unit instanceof Worker &&
+                    ((Worker) unit).isStationed()) {
+                continue;
+            }
+
+            idleUnits.add(unit);
+        }
+
+        return Collections.unmodifiableList(idleUnits);
     }
 
     public int getUnitCap() {
@@ -227,7 +267,8 @@ public final class GameState {
         fogOfWarService.refreshVisibility(
                 gameMap,
                 TOWN_HALL_COORDINATE,
-                units
+                units,
+                getMaintainedBuildings()
         );
     }
 
@@ -239,6 +280,23 @@ public final class GameState {
         for (Unit unit : units) {
             unit.restoreActionPoints();
         }
+    }
+
+    Unit deployUnit(UnitType unitType) {
+        Objects.requireNonNull(
+                unitType,
+                "Unit type cannot be null"
+        );
+
+        Unit unit = unitFactory.create(
+                createNextUnitId(),
+                unitType,
+                findDeploymentCoordinate()
+        );
+
+        units.add(unit);
+        refreshVisibility();
+        return unit;
     }
 
     ResourceBuilding addResourceBuilding(
@@ -470,5 +528,24 @@ public final class GameState {
         int createdId = nextBuildingId;
         nextBuildingId = Math.incrementExact(nextBuildingId);
         return createdId;
+    }
+
+    private HexCoordinate findDeploymentCoordinate() {
+        List<HexCoordinate> candidates = new ArrayList<>();
+        candidates.add(TOWN_HALL_COORDINATE);
+        candidates.addAll(TOWN_HALL_COORDINATE.getNeighbors());
+
+        for (HexCoordinate coordinate : candidates) {
+            HexTile tile = gameMap.getTile(coordinate)
+                    .orElse(null);
+
+            if (tile != null &&
+                    tile.isNormallyPassable() &&
+                    getUnitsAt(coordinate).isEmpty()) {
+                return coordinate;
+            }
+        }
+
+        return TOWN_HALL_COORDINATE;
     }
 }

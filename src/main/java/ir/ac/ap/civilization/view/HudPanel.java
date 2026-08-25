@@ -4,9 +4,12 @@ import ir.ac.ap.civilization.model.building.TownHall;
 import ir.ac.ap.civilization.model.building.TownHallLevel;
 import ir.ac.ap.civilization.model.game.EconomyService;
 import ir.ac.ap.civilization.model.game.EconomyStatus;
+import ir.ac.ap.civilization.model.game.EconomyForecastService;
 import ir.ac.ap.civilization.model.game.GameState;
+import ir.ac.ap.civilization.model.game.ResourceFlowForecast;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
+import ir.ac.ap.civilization.model.unit.UnitType;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -49,6 +52,7 @@ public final class HudPanel extends JPanel {
 
     private final JLabel turnLabel;
     private final JLabel unitCapLabel;
+    private final JLabel unitBreakdownLabel;
     private final JLabel townHallLevelLabel;
     private final JLabel townHallHpLabel;
     private final JLabel queueLabel;
@@ -66,11 +70,15 @@ public final class HudPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBackground(BACKGROUND_COLOR);
         setBorder(new EmptyBorder(12, 12, 12, 12));
-        setPreferredSize(new Dimension(0, 290));
+        setPreferredSize(new Dimension(0, 315));
 
         turnLabel = createInformationLabel("Turn: 1");
 
         unitCapLabel = createInformationLabel("Units: 5/8");
+
+        unitBreakdownLabel = createInformationLabel(
+                "B: 2 | W: 2 | E: 1 | BE: 0"
+        );
 
         townHallLevelLabel =
                 createInformationLabel("Town Hall: Base Camp");
@@ -190,6 +198,25 @@ public final class HudPanel extends JPanel {
                         : TEXT_COLOR
         );
 
+        unitBreakdownLabel.setText(
+                "Builder: " +
+                        gameState.getActiveUnitCount(
+                                UnitType.BUILDER
+                        ) +
+                        " | Worker: " +
+                        gameState.getActiveUnitCount(
+                                UnitType.WORKER
+                        ) +
+                        " | Explorer: " +
+                        gameState.getActiveUnitCount(
+                                UnitType.EXPLORER
+                        ) +
+                        " | Border: " +
+                        gameState.getActiveUnitCount(
+                                UnitType.BORDER_EXPANDER
+                        )
+        );
+
         townHallLevelLabel.setText(
                 "Town Hall: " +
                         townHall.getCurrentLevel()
@@ -203,10 +230,11 @@ public final class HudPanel extends JPanel {
                         townHall.getMaximumHp()
         );
 
-        refreshResourceLabels(
-                townHall,
-                stockpile
-        );
+        ResourceFlowForecast forecast =
+                new EconomyForecastService(gameState)
+                        .calculate();
+
+        refreshResourceLabels(stockpile, forecast);
 
         refreshQueueInformation(townHall);
         refreshEconomyInformation(gameState);
@@ -290,6 +318,11 @@ public final class HudPanel extends JPanel {
                 new Dimension(Integer.MAX_VALUE, 42)
         );
 
+        unitBreakdownLabel.setAlignmentX(0.5f);
+        unitBreakdownLabel.setMaximumSize(
+                new Dimension(Integer.MAX_VALUE, 36)
+        );
+
         queueLabel.setAlignmentX(0.5f);
 
         queueLabel.setMaximumSize(
@@ -304,6 +337,8 @@ public final class HudPanel extends JPanel {
         informationPanel.add(headerPanel);
         informationPanel.add(Box.createVerticalStrut(8));
         informationPanel.add(resourcesPanel);
+        informationPanel.add(Box.createVerticalStrut(6));
+        informationPanel.add(unitBreakdownLabel);
         informationPanel.add(Box.createVerticalStrut(8));
         informationPanel.add(queueLabel);
         informationPanel.add(Box.createVerticalStrut(6));
@@ -387,8 +422,8 @@ public final class HudPanel extends JPanel {
     }
 
     private void refreshResourceLabels(
-            TownHall townHall,
-            ResourceStockpile stockpile
+            ResourceStockpile stockpile,
+            ResourceFlowForecast forecast
     ) {
         int capacity =
                 stockpile.getCapacityPerResource();
@@ -400,7 +435,7 @@ public final class HudPanel extends JPanel {
                     stockpile.getAmount(resourceType);
 
             int production =
-                    townHall.getBaseProduction(resourceType);
+                    forecast.getNetChange(resourceType);
 
             String productionPrefix =
                     production >= 0 ? "+" : "";
@@ -417,7 +452,7 @@ public final class HudPanel extends JPanel {
                             " (" +
                             productionPrefix +
                             production +
-                            "/turn)"
+                            " net/turn)"
             );
 
             label.setForeground(

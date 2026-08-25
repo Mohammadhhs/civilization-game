@@ -13,7 +13,6 @@ class GameStateTerritoryTest {
     @Test
     void gameShouldStartWithRadiusTwoTerritory() {
         GameState gameState = new GameState(123L);
-
         HexCoordinate center =
                 gameState.getTownHallCoordinate();
 
@@ -33,10 +32,7 @@ class GameStateTerritoryTest {
                     gameState.getPlayerTerritory()
                             .contains(coordinate)
             );
-
-            assertTrue(
-                    tile.isInsidePlayerTerritory()
-            );
+            assertTrue(tile.isInsidePlayerTerritory());
         }
 
         HexCoordinate outsideCoordinate =
@@ -46,7 +42,6 @@ class GameStateTerritoryTest {
                 gameState.getPlayerTerritory()
                         .contains(outsideCoordinate)
         );
-
         assertFalse(
                 gameState.getGameMap()
                         .getTile(outsideCoordinate)

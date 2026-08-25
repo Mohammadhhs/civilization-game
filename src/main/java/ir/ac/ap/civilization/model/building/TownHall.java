@@ -1,10 +1,12 @@
 package ir.ac.ap.civilization.model.building;
 
 import ir.ac.ap.civilization.model.production.ProductionCommand;
+import ir.ac.ap.civilization.model.production.UnitProductionCommand;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
 import ir.ac.ap.civilization.model.technology.TechnologyManager;
 import ir.ac.ap.civilization.model.technology.TechnologyType;
+import ir.ac.ap.civilization.model.unit.UnitType;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -87,11 +89,11 @@ public final class TownHall {
                 "Technology type cannot be null"
         );
 
-        return !isBusy()
-                && technologyManager.canResearch(technologyType)
-                && stockpile.canAfford(
-                technologyType.getResearchCost()
-        );
+        return !isBusy() &&
+                technologyManager.canResearch(technologyType) &&
+                stockpile.canAfford(
+                        technologyType.getResearchCost()
+                );
     }
 
     public boolean hasTechnology(
@@ -116,6 +118,18 @@ public final class TownHall {
     public double getMiningProductionMultiplier() {
         return technologyManager
                 .getMiningProductionMultiplier();
+    }
+
+    public boolean canStartUnitProduction(UnitType unitType) {
+        Objects.requireNonNull(
+                unitType,
+                "Unit type cannot be null"
+        );
+
+        return !isBusy() &&
+                stockpile.canAfford(
+                        unitType.getProductionCost()
+                );
     }
 
     public int getBaseProduction(
@@ -249,17 +263,45 @@ public final class TownHall {
                 new TechnologyResearchCommand(technologyType);
     }
 
-    public void advanceProductionQueue() {
+    public void startUnitProduction(UnitType unitType) {
+        Objects.requireNonNull(
+                unitType,
+                "Unit type cannot be null"
+        );
+
+        if (isBusy()) {
+            throw new IllegalStateException(
+                    "Town Hall is already processing a command"
+            );
+        }
+
+        if (!stockpile.canAfford(
+                unitType.getProductionCost()
+        )) {
+            throw new IllegalStateException(
+                    "Not enough resources to train unit"
+            );
+        }
+
+        stockpile.spend(unitType.getProductionCost());
+        activeCommand = new UnitProductionCommand(unitType);
+    }
+
+    public ProductionCommand advanceProductionQueue() {
         if (activeCommand == null) {
-            return;
+            return null;
         }
 
         activeCommand.advanceTurn();
 
         if (activeCommand.isCompleted()) {
-            activeCommand.complete(this);
+            ProductionCommand completedCommand = activeCommand;
+            completedCommand.complete(this);
             activeCommand = null;
+            return completedCommand;
         }
+
+        return null;
     }
 
     public void cancelCurrentCommand() {
@@ -316,8 +358,8 @@ public final class TownHall {
         currentLevel = targetLevel;
 
         stockpile.setCapacityPerResource(
-                targetLevel.getStorageCapacity()
-                        + storageTechnologyBonus
+                targetLevel.getStorageCapacity() +
+                        storageTechnologyBonus
         );
 
         heal(targetLevel.getHealAfterUpgrade());
@@ -332,8 +374,8 @@ public final class TownHall {
                 technologyType.getStorageCapacityBonus();
 
         stockpile.setCapacityPerResource(
-                currentLevel.getStorageCapacity()
-                        + storageTechnologyBonus
+                currentLevel.getStorageCapacity() +
+                        storageTechnologyBonus
         );
     }
 }

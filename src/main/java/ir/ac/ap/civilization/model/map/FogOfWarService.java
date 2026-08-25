@@ -1,7 +1,9 @@
 package ir.ac.ap.civilization.model.map;
 
+import ir.ac.ap.civilization.model.building.MaintainedBuilding;
 import ir.ac.ap.civilization.model.unit.Unit;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -13,6 +15,21 @@ public final class FogOfWarService {
             GameMap gameMap,
             HexCoordinate townHallCoordinate,
             List<Unit> units
+    ) {
+        refreshVisibility(
+                gameMap,
+                townHallCoordinate,
+                units,
+                Collections
+                        .<MaintainedBuilding>emptyList()
+        );
+    }
+
+    public void refreshVisibility(
+            GameMap gameMap,
+            HexCoordinate townHallCoordinate,
+            List<Unit> units,
+            List<MaintainedBuilding> buildings
     ) {
         Objects.requireNonNull(
                 gameMap,
@@ -27,6 +44,11 @@ public final class FogOfWarService {
         Objects.requireNonNull(
                 units,
                 "Unit list cannot be null"
+        );
+
+        Objects.requireNonNull(
+                buildings,
+                "Building list cannot be null"
         );
 
         hideAllTiles(gameMap);
@@ -47,6 +69,20 @@ public final class FogOfWarService {
                     gameMap,
                     nonNullUnit.getPosition(),
                     nonNullUnit.getVisionRadius()
+            );
+        }
+
+        for (MaintainedBuilding building : buildings) {
+            MaintainedBuilding nonNullBuilding =
+                    Objects.requireNonNull(
+                            building,
+                            "Building cannot be null"
+                    );
+
+            revealArea(
+                    gameMap,
+                    nonNullBuilding.getPosition(),
+                    nonNullBuilding.getVisionRadius()
             );
         }
     }

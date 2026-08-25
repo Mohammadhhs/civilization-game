@@ -5,6 +5,7 @@ import ir.ac.ap.civilization.model.game.GameState;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -20,6 +21,7 @@ public final class GameFrame extends JFrame {
     private final HexInfoPanel hexInfoPanel;
     private final TechnologyPanel technologyPanel;
     private final BuildingActionsPanel buildingActionsPanel;
+    private final UnitProductionPanel unitProductionPanel;
 
     public GameFrame(GameController controller) {
         super("Civilization - Advanced Programming Project");
@@ -35,6 +37,8 @@ public final class GameFrame extends JFrame {
         this.technologyPanel = new TechnologyPanel();
         this.buildingActionsPanel =
                 new BuildingActionsPanel(controller);
+        this.unitProductionPanel =
+                new UnitProductionPanel(controller);
 
         configureFrame();
         arrangeComponents();
@@ -45,7 +49,7 @@ public final class GameFrame extends JFrame {
     private void configureFrame() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        setMinimumSize(new Dimension(1100, 680));
+        setMinimumSize(new Dimension(1280, 720));
         setSize(1400, 800);
         setLocationRelativeTo(null);
     }
@@ -65,7 +69,14 @@ public final class GameFrame extends JFrame {
                 .setUnitIncrement(14);
 
         add(hudPanel, BorderLayout.NORTH);
-        add(technologyPanel, BorderLayout.WEST);
+        JPanel westPanel = new JPanel(new BorderLayout());
+        westPanel.add(technologyPanel, BorderLayout.CENTER);
+        westPanel.add(
+                unitProductionPanel,
+                BorderLayout.SOUTH
+        );
+
+        add(westPanel, BorderLayout.WEST);
         add(hexMapPanel, BorderLayout.CENTER);
         add(informationScrollPane, BorderLayout.EAST);
         add(buildingActionsPanel, BorderLayout.SOUTH);
@@ -114,13 +125,7 @@ public final class GameFrame extends JFrame {
         );
 
         hudPanel.setEndTurnAction(
-                event -> executeAction(
-                        () -> {
-                            controller.endTurn();
-                            hexMapPanel.refreshFromModel();
-                        },
-                        "Turn completed and economy updated"
-                )
+                event -> requestEndTurn()
         );
 
         technologyPanel.setResearchAction(
@@ -152,6 +157,23 @@ public final class GameFrame extends JFrame {
                                 builderId
                         ),
                         "Settlement constructed; unit cap increased"
+                )
+        );
+
+        buildingActionsPanel.setExpandBorderAction(
+                unitId -> executeAction(
+                        () -> controller.expandBorder(unitId),
+                        "Border expanded and unit consumed"
+                )
+        );
+
+        unitProductionPanel.setTrainAction(
+                unitType -> executeAction(
+                        () -> controller.startUnitProduction(
+                                unitType
+                        ),
+                        unitType.getDisplayName() +
+                                " production started"
                 )
         );
 
@@ -197,11 +219,39 @@ public final class GameFrame extends JFrame {
         }
     }
 
+    private void requestEndTurn() {
+        int idleUnitCount = controller.getIdleUnitCount();
+
+        if (idleUnitCount > 0) {
+            int answer = JOptionPane.showConfirmDialog(
+                    this,
+                    idleUnitCount +
+                            " unit(s) still have AP. End turn anyway?",
+                    "Idle units",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
+
+            if (answer != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
+        executeAction(
+                () -> {
+                    controller.endTurn();
+                    hexMapPanel.refreshFromModel();
+                },
+                "Turn completed and economy updated"
+        );
+    }
+
     private void refreshView() {
         hudPanel.refresh(controller.getGameState());
         technologyPanel.refresh(
                 controller.getGameState().getTownHall()
         );
+        unitProductionPanel.refresh();
         hexMapPanel.refreshFromModel();
     }
 }

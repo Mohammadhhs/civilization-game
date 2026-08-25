@@ -40,8 +40,8 @@ public final class TechnologyManager {
     }
 
     public boolean canResearch(TechnologyType technologyType) {
-        return !isCompleted(technologyType)
-                && arePrerequisitesCompleted(technologyType);
+        return !isCompleted(technologyType) &&
+                arePrerequisitesCompleted(technologyType);
     }
 
     public void completeResearch(

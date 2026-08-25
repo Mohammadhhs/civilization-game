@@ -4,6 +4,7 @@ import ir.ac.ap.civilization.controller.GameController;
 import ir.ac.ap.civilization.model.building.BuildingType;
 import ir.ac.ap.civilization.model.resource.ResourceType;
 import ir.ac.ap.civilization.model.unit.Builder;
+import ir.ac.ap.civilization.model.unit.BorderExpander;
 import ir.ac.ap.civilization.model.unit.Unit;
 import ir.ac.ap.civilization.model.unit.Worker;
 
@@ -35,18 +36,22 @@ public final class BuildingActionsPanel extends JPanel {
             new Color(70, 145, 205);
     private static final Color SETTLEMENT_COLOR =
             new Color(143, 92, 184);
+    private static final Color BORDER_COLOR =
+            new Color(227, 176, 64);
 
     private final GameController controller;
     private final JComboBox<BuildingType> buildingTypeBox;
     private final JLabel costLabel;
     private final JButton buildButton;
     private final JButton settlementButton;
+    private final JButton expandBorderButton;
     private final JButton stationButton;
     private final JButton unstationButton;
 
     private Unit selectedUnit;
     private BiConsumer<Integer, BuildingType> buildAction;
     private IntConsumer settlementAction;
+    private IntConsumer expandBorderAction;
     private IntConsumer stationAction;
     private IntConsumer unstationAction;
 
@@ -58,7 +63,7 @@ public final class BuildingActionsPanel extends JPanel {
 
         setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
         setBackground(BACKGROUND_COLOR);
-        setPreferredSize(new Dimension(0, 82));
+        setPreferredSize(new Dimension(0, 122));
         setBorder(
                 BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(
@@ -72,6 +77,8 @@ public final class BuildingActionsPanel extends JPanel {
         buildAction = (unitId, type) -> {
         };
         settlementAction = unitId -> {
+        };
+        expandBorderAction = unitId -> {
         };
         stationAction = unitId -> {
         };
@@ -105,6 +112,13 @@ public final class BuildingActionsPanel extends JPanel {
         );
         settlementButton.setPreferredSize(
                 new Dimension(170, 36)
+        );
+        expandBorderButton = createButton(
+                "Expand Border",
+                BORDER_COLOR
+        );
+        expandBorderButton.setPreferredSize(
+                new Dimension(160, 36)
         );
         stationButton = createButton(
                 "Station Worker",
@@ -143,6 +157,16 @@ public final class BuildingActionsPanel extends JPanel {
                 }
         );
 
+        expandBorderButton.addActionListener(
+                event -> {
+                    if (selectedUnit != null) {
+                        expandBorderAction.accept(
+                                selectedUnit.getId()
+                        );
+                    }
+                }
+        );
+
         stationButton.addActionListener(
                 event -> {
                     if (selectedUnit != null) {
@@ -168,6 +192,7 @@ public final class BuildingActionsPanel extends JPanel {
         add(costLabel);
         add(buildButton);
         add(settlementButton);
+        add(expandBorderButton);
         add(stationButton);
         add(unstationButton);
 
@@ -202,6 +227,15 @@ public final class BuildingActionsPanel extends JPanel {
         );
     }
 
+    public void setExpandBorderAction(
+            IntConsumer expandBorderAction
+    ) {
+        this.expandBorderAction = Objects.requireNonNull(
+                expandBorderAction,
+                "Expand border action cannot be null"
+        );
+    }
+
     public void setUnstationAction(
             IntConsumer unstationAction
     ) {
@@ -226,6 +260,9 @@ public final class BuildingActionsPanel extends JPanel {
         boolean workerSelected =
                 selectedUnit instanceof Worker;
 
+        boolean borderExpanderSelected =
+                selectedUnit instanceof BorderExpander;
+
         buildButton.setEnabled(
                 builderSelected &&
                         controller
@@ -238,6 +275,13 @@ public final class BuildingActionsPanel extends JPanel {
         settlementButton.setEnabled(
                 builderSelected &&
                         controller.canConstructSettlement(
+                                selectedUnit.getId()
+                        )
+        );
+
+        expandBorderButton.setEnabled(
+                borderExpanderSelected &&
+                        controller.canExpandBorder(
                                 selectedUnit.getId()
                         )
         );
@@ -268,6 +312,12 @@ public final class BuildingActionsPanel extends JPanel {
                         "Wood 60, Stone 50, Iron 20, 3 AP " +
                         "and one charge"
                         : "Select a Builder"
+        );
+
+        expandBorderButton.setToolTipText(
+                borderExpanderSelected
+                        ? "Claim this explored hex and its explored neighbors"
+                        : "Select a Border Expander"
         );
 
         stationButton.setToolTipText(

@@ -18,14 +18,9 @@ class GameStateUnitTest {
 
     @Test
     void gameStartsWithRequiredCivilianUnits() {
-        GameState gameState =
-                new GameState(123L);
+        GameState gameState = new GameState(123L);
 
-        assertEquals(
-                5,
-                gameState.getUnits().size()
-        );
-
+        assertEquals(5, gameState.getUnits().size());
         assertEquals(
                 2,
                 countUnitsOfType(
@@ -33,7 +28,6 @@ class GameStateUnitTest {
                         UnitType.BUILDER
                 )
         );
-
         assertEquals(
                 2,
                 countUnitsOfType(
@@ -41,7 +35,6 @@ class GameStateUnitTest {
                         UnitType.WORKER
                 )
         );
-
         assertEquals(
                 1,
                 countUnitsOfType(
@@ -53,12 +46,10 @@ class GameStateUnitTest {
 
     @Test
     void startingUnitsHaveUniqueIdsAndPositions() {
-        GameState gameState =
-                new GameState(123L);
+        GameState gameState = new GameState(123L);
 
         Set<Integer> ids = new HashSet<>();
-        Set<HexCoordinate> positions =
-                new HashSet<>();
+        Set<HexCoordinate> positions = new HashSet<>();
 
         for (Unit unit : gameState.getUnits()) {
             ids.add(unit.getId());
@@ -71,9 +62,7 @@ class GameStateUnitTest {
 
     @Test
     void startingUnitsAreAdjacentToTownHallAndPassable() {
-        GameState gameState =
-                new GameState(123L);
-
+        GameState gameState = new GameState(123L);
         HexCoordinate townHallCoordinate =
                 gameState.getTownHallCoordinate();
 
@@ -84,8 +73,7 @@ class GameStateUnitTest {
                     )
             );
 
-            HexTile tile = gameState
-                    .getGameMap()
+            HexTile tile = gameState.getGameMap()
                     .getTile(unit.getPosition())
                     .orElseThrow(AssertionError::new);
 
@@ -95,11 +83,8 @@ class GameStateUnitTest {
 
     @Test
     void unitsCanBeFoundByIdAndPosition() {
-        GameState gameState =
-                new GameState(123L);
-
-        Unit firstUnit =
-                gameState.getUnits().get(0);
+        GameState gameState = new GameState(123L);
+        Unit firstUnit = gameState.getUnits().get(0);
 
         assertTrue(
                 gameState
@@ -108,48 +93,37 @@ class GameStateUnitTest {
         );
 
         assertFalse(
-                gameState
-                        .getUnitById(999)
-                        .isPresent()
+                gameState.getUnitById(999).isPresent()
         );
 
         assertEquals(
                 1,
                 gameState
-                        .getUnitsAt(
-                                firstUnit.getPosition()
-                        )
+                        .getUnitsAt(firstUnit.getPosition())
                         .size()
         );
     }
 
     @Test
     void externalCodeCannotChangeUnitList() {
-        GameState gameState =
-                new GameState(123L);
+        GameState gameState = new GameState(123L);
 
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> gameState.getUnits().clear()
         );
 
-        assertEquals(
-                5,
-                gameState.getUnits().size()
-        );
+        assertEquals(5, gameState.getUnits().size());
     }
 
     private long countUnitsOfType(
             GameState gameState,
             UnitType unitType
     ) {
-        return gameState
-                .getUnits()
+        return gameState.getUnits()
                 .stream()
                 .filter(
-                        unit ->
-                                unit.getUnitType() ==
-                                        unitType
+                        unit -> unit.getUnitType() == unitType
                 )
                 .count();
     }

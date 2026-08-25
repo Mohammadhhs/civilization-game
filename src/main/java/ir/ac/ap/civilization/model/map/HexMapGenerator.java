@@ -16,7 +16,6 @@ public final class HexMapGenerator {
 
     private static final int SAFE_START_RADIUS = 2;
     private static final int SMOOTHING_PASSES = 2;
-
     private static final long DEPOSIT_SEED_SALT =
             0x5DEECE66DL;
 
@@ -39,7 +38,6 @@ public final class HexMapGenerator {
         }
 
         Random random = new Random(seed);
-
         Random depositRandom = new Random(
                 seed ^ DEPOSIT_SEED_SALT
         );
@@ -47,14 +45,8 @@ public final class HexMapGenerator {
         List<HexCoordinate> coordinates =
                 CENTER.getCoordinatesWithinRadius(radius);
 
-        LinkedHashMap<
-                HexCoordinate,
-                TerrainType
-                > terrainByCoordinate =
-                createInitialTerrain(
-                        coordinates,
-                        random
-                );
+        LinkedHashMap<HexCoordinate, TerrainType> terrainByCoordinate =
+                createInitialTerrain(coordinates, random);
 
         smoothTerrain(
                 coordinates,
@@ -75,10 +67,8 @@ public final class HexMapGenerator {
         return new GameMap(radius, seed, tiles);
     }
 
-    private LinkedHashMap<
-            HexCoordinate,
-            TerrainType
-            > createInitialTerrain(
+    private LinkedHashMap<HexCoordinate, TerrainType>
+    createInitialTerrain(
             List<HexCoordinate> coordinates,
             Random random
     ) {
@@ -95,9 +85,7 @@ public final class HexMapGenerator {
         return result;
     }
 
-    private TerrainType chooseWeightedTerrain(
-            Random random
-    ) {
+    private TerrainType chooseWeightedTerrain(Random random) {
         int roll = random.nextInt(100);
 
         if (roll < 25) {
@@ -125,23 +113,13 @@ public final class HexMapGenerator {
 
     private void smoothTerrain(
             List<HexCoordinate> coordinates,
-            LinkedHashMap<
-                    HexCoordinate,
-                    TerrainType
-                    > terrainByCoordinate,
+            LinkedHashMap<HexCoordinate, TerrainType>
+                    terrainByCoordinate,
             Random random
     ) {
-        for (int pass = 0;
-             pass < SMOOTHING_PASSES;
-             pass++) {
-
-            LinkedHashMap<
-                    HexCoordinate,
-                    TerrainType
-                    > snapshot =
-                    new LinkedHashMap<>(
-                            terrainByCoordinate
-                    );
+        for (int pass = 0; pass < SMOOTHING_PASSES; pass++) {
+            LinkedHashMap<HexCoordinate, TerrainType> snapshot =
+                    new LinkedHashMap<>(terrainByCoordinate);
 
             for (HexCoordinate coordinate : coordinates) {
                 TerrainType dominantTerrain =
@@ -164,21 +142,16 @@ public final class HexMapGenerator {
 
     private TerrainType findDominantNeighborTerrain(
             HexCoordinate coordinate,
-            Map<HexCoordinate, TerrainType>
-                    terrainByCoordinate
+            Map<HexCoordinate, TerrainType> terrainByCoordinate
     ) {
         EnumMap<TerrainType, Integer> counts =
                 new EnumMap<>(TerrainType.class);
 
-        for (HexCoordinate neighbor :
-                coordinate.getNeighbors()) {
-
-            TerrainType terrain =
-                    terrainByCoordinate.get(neighbor);
+        for (HexCoordinate neighbor : coordinate.getNeighbors()) {
+            TerrainType terrain = terrainByCoordinate.get(neighbor);
 
             if (terrain != null) {
-                Integer currentCount =
-                        counts.get(terrain);
+                Integer currentCount = counts.get(terrain);
 
                 counts.put(
                         terrain,
@@ -192,14 +165,10 @@ public final class HexMapGenerator {
         TerrainType dominantTerrain = null;
         int highestCount = 0;
 
-        for (TerrainType terrain :
-                TerrainType.values()) {
-
+        for (TerrainType terrain : TerrainType.values()) {
             Integer count = counts.get(terrain);
 
-            if (count != null &&
-                    count > highestCount) {
-
+            if (count != null && count > highestCount) {
                 dominantTerrain = terrain;
                 highestCount = count;
             }
@@ -211,8 +180,7 @@ public final class HexMapGenerator {
     }
 
     private void createSafeStartingArea(
-            Map<HexCoordinate, TerrainType>
-                    terrainByCoordinate
+            Map<HexCoordinate, TerrainType> terrainByCoordinate
     ) {
         for (HexCoordinate coordinate :
                 CENTER.getCoordinatesWithinRadius(
@@ -233,11 +201,7 @@ public final class HexMapGenerator {
             }
         }
 
-        terrainByCoordinate.put(
-                CENTER,
-                TerrainType.PLAIN
-        );
-
+        terrainByCoordinate.put(CENTER, TerrainType.PLAIN);
         terrainByCoordinate.put(
                 STARTING_FOREST,
                 TerrainType.FOREST
@@ -248,8 +212,7 @@ public final class HexMapGenerator {
             HexCoordinate coordinate
     ) {
         int parity = Math.floorMod(
-                coordinate.getQ() +
-                        coordinate.getR(),
+                coordinate.getQ() + coordinate.getR(),
                 2
         );
 
@@ -258,11 +221,9 @@ public final class HexMapGenerator {
                 : TerrainType.GRASSLAND;
     }
 
-    private LinkedHashMap<HexCoordinate, HexTile>
-    createTiles(
+    private LinkedHashMap<HexCoordinate, HexTile> createTiles(
             List<HexCoordinate> coordinates,
-            Map<HexCoordinate, TerrainType>
-                    terrainByCoordinate,
+            Map<HexCoordinate, TerrainType> terrainByCoordinate,
             Random random,
             Random depositRandom
     ) {
@@ -276,11 +237,11 @@ public final class HexMapGenerator {
             Set<NaturalResourceType> resources =
                     coordinate.equals(CENTER)
                             ? Collections
-                            .<NaturalResourceType>emptySet()
+                                    .<NaturalResourceType>emptySet()
                             : createNaturalResources(
-                            terrain,
-                            random
-                    );
+                                    terrain,
+                                    random
+                            );
 
             Map<NaturalResourceType, Integer>
                     resourceAmounts =
@@ -302,32 +263,23 @@ public final class HexMapGenerator {
         return tiles;
     }
 
-    private Set<NaturalResourceType>
-    createNaturalResources(
+    private Set<NaturalResourceType> createNaturalResources(
             TerrainType terrain,
             Random random
     ) {
         EnumSet<NaturalResourceType> resources =
-                EnumSet.noneOf(
-                        NaturalResourceType.class
-                );
+                EnumSet.noneOf(NaturalResourceType.class);
 
         switch (terrain) {
             case FOREST:
-                resources.add(
-                        NaturalResourceType.WOOD
-                );
+                resources.add(NaturalResourceType.WOOD);
                 break;
 
             case MOUNTAIN:
-                resources.add(
-                        NaturalResourceType.STONE
-                );
+                resources.add(NaturalResourceType.STONE);
 
                 if (random.nextDouble() < 0.30) {
-                    resources.add(
-                            NaturalResourceType.IRON
-                    );
+                    resources.add(NaturalResourceType.IRON);
                 }
                 break;
 
@@ -353,9 +305,7 @@ public final class HexMapGenerator {
 
             case SEA:
                 if (random.nextDouble() < 0.40) {
-                    resources.add(
-                            NaturalResourceType.FISH
-                    );
+                    resources.add(NaturalResourceType.FISH);
                 }
                 break;
 
@@ -377,17 +327,12 @@ public final class HexMapGenerator {
             Random random
     ) {
         EnumMap<NaturalResourceType, Integer> amounts =
-                new EnumMap<>(
-                        NaturalResourceType.class
-                );
+                new EnumMap<>(NaturalResourceType.class);
 
         for (NaturalResourceType resource : resources) {
             amounts.put(
                     resource,
-                    createResourceAmount(
-                            resource,
-                            random
-                    )
+                    createResourceAmount(resource, random)
             );
         }
 

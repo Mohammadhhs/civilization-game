@@ -25,23 +25,16 @@ class TownHallTechnologyTest {
         );
 
         assertTrue(townHall.isBusy());
-
         assertEquals(
                 "Research Stone Mining",
                 townHall.getActiveCommandName()
         );
-
-        assertEquals(
-                2,
-                townHall.getRemainingProductionTurns()
-        );
-
+        assertEquals(2, townHall.getRemainingProductionTurns());
         assertEquals(
                 0,
                 townHall.getStockpile()
                         .getAmount(ResourceType.WOOD)
         );
-
         assertEquals(
                 10,
                 townHall.getStockpile()
@@ -65,13 +58,11 @@ class TownHallTechnologyTest {
         );
 
         assertFalse(townHall.isBusy());
-
         assertEquals(
                 30,
                 townHall.getStockpile()
                         .getAmount(ResourceType.WOOD)
         );
-
         assertEquals(
                 19,
                 townHall.getStockpile()
@@ -106,7 +97,6 @@ class TownHallTechnologyTest {
                         TechnologyType.STONE_MINING
                 )
         );
-
         assertFalse(townHall.isBusy());
     }
 
@@ -146,17 +136,14 @@ class TownHallTechnologyTest {
         townHall.startResearch(
                 TechnologyType.STONE_MINING
         );
-
         townHall.cancelCurrentCommand();
 
         assertFalse(townHall.isBusy());
-
         assertFalse(
                 townHall.hasTechnology(
                         TechnologyType.STONE_MINING
                 )
         );
-
         assertEquals(
                 20,
                 townHall.getStockpile()
@@ -193,11 +180,7 @@ class TownHallTechnologyTest {
                 townHall.getStockpile()
                         .getCapacityPerResource()
         );
-
-        assertEquals(
-                100,
-                townHall.getStorageTechnologyBonus()
-        );
+        assertEquals(100, townHall.getStorageTechnologyBonus());
     }
 
     @Test
@@ -216,11 +199,8 @@ class TownHallTechnologyTest {
         townHall.startUpgrade();
         advanceQueue(townHall, 3);
 
-        assertEquals(
-                TownHallLevel.SETTLEMENT,
-                townHall.getCurrentLevel()
-        );
-
+        assertEquals(TownHallLevel.SETTLEMENT,
+                townHall.getCurrentLevel());
         assertEquals(
                 250,
                 townHall.getStockpile()
@@ -256,9 +236,7 @@ class TownHallTechnologyTest {
             int iron
     ) {
         TownHall townHall = new TownHall();
-
-        ResourceStockpile stockpile =
-                townHall.getStockpile();
+        ResourceStockpile stockpile = townHall.getStockpile();
 
         stockpile.add(ResourceType.WOOD, wood);
         stockpile.add(ResourceType.STONE, stone);
@@ -272,7 +250,6 @@ class TownHallTechnologyTest {
             TechnologyType technologyType
     ) {
         townHall.startResearch(technologyType);
-
         advanceQueue(
                 townHall,
                 technologyType.getResearchTurns()

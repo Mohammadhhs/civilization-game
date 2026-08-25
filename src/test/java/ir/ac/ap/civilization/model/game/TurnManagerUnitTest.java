@@ -10,7 +10,6 @@ class TurnManagerUnitTest {
     @Test
     void endTurnRestoresActionPointsForEveryUnit() {
         GameState gameState = new GameState();
-
         TurnManager turnManager =
                 new TurnManager(gameState);
 
@@ -25,10 +24,7 @@ class TurnManagerUnitTest {
 
         turnManager.endTurn();
 
-        assertEquals(
-                2,
-                gameState.getTurnNumber()
-        );
+        assertEquals(2, gameState.getTurnNumber());
 
         for (Unit unit : gameState.getUnits()) {
             assertEquals(

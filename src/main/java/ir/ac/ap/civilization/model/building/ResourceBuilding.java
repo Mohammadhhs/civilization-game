@@ -13,6 +13,8 @@ import java.util.Set;
 public final class ResourceBuilding
         implements MaintainedBuilding {
 
+    private static final int VISION_RADIUS = 1;
+
     public static final int
             MAXIMUM_CONSECUTIVE_MISSED_UPKEEP_TURNS =
             MaintainedBuilding
@@ -76,6 +78,11 @@ public final class ResourceBuilding
     @Override
     public HexCoordinate getPosition() {
         return position;
+    }
+
+    @Override
+    public int getVisionRadius() {
+        return VISION_RADIUS;
     }
 
     public NaturalResourceType getNaturalResourceType() {

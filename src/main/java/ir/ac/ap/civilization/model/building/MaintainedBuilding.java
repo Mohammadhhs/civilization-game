@@ -13,6 +13,8 @@ public interface MaintainedBuilding {
 
     HexCoordinate getPosition();
 
+    int getVisionRadius();
+
     Map<ResourceType, Integer> getUpkeepCost();
 
     int getConsecutiveMissedUpkeepTurns();
