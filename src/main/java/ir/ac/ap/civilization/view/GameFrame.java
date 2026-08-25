@@ -5,6 +5,7 @@ import ir.ac.ap.civilization.model.game.GameState;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.Objects;
@@ -50,10 +51,23 @@ public final class GameFrame extends JFrame {
     }
 
     private void arrangeComponents() {
+        JScrollPane informationScrollPane =
+                new JScrollPane(hexInfoPanel);
+
+        informationScrollPane.setBorder(null);
+        informationScrollPane.setPreferredSize(
+                new Dimension(315, 0)
+        );
+        informationScrollPane.setHorizontalScrollBarPolicy(
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        );
+        informationScrollPane.getVerticalScrollBar()
+                .setUnitIncrement(14);
+
         add(hudPanel, BorderLayout.NORTH);
         add(technologyPanel, BorderLayout.WEST);
         add(hexMapPanel, BorderLayout.CENTER);
-        add(hexInfoPanel, BorderLayout.EAST);
+        add(informationScrollPane, BorderLayout.EAST);
         add(buildingActionsPanel, BorderLayout.SOUTH);
     }
 
@@ -102,7 +116,7 @@ public final class GameFrame extends JFrame {
                             controller.endTurn();
                             hexMapPanel.refreshFromModel();
                         },
-                        "Turn completed and unit AP restored"
+                        "Turn completed and economy updated"
                 )
         );
 

@@ -40,6 +40,7 @@ public final class GameState {
     private final List<Unit> units;
     private final List<ResourceBuilding> resourceBuildings;
     private final FogOfWarService fogOfWarService;
+    private final EconomyStatus economyStatus;
 
     private int turnNumber;
     private int nextUnitId;
@@ -66,6 +67,7 @@ public final class GameState {
         this.units = new ArrayList<>();
         this.resourceBuildings = new ArrayList<>();
         this.fogOfWarService = new FogOfWarService();
+        this.economyStatus = new EconomyStatus();
 
         initializeStartingResources();
         initializeStartingTerritory();
@@ -91,6 +93,10 @@ public final class GameState {
 
     public PlayerTerritory getPlayerTerritory() {
         return playerTerritory;
+    }
+
+    public EconomyStatus getEconomyStatus() {
+        return economyStatus;
     }
 
     public List<Unit> getUnits() {
@@ -208,6 +214,41 @@ public final class GameState {
                     "Unit does not belong to this game"
             );
         }
+    }
+
+    void removeResourceBuilding(
+            ResourceBuilding building
+    ) {
+        Objects.requireNonNull(
+                building,
+                "Resource building cannot be null"
+        );
+
+        if (!resourceBuildings.contains(building)) {
+            throw new IllegalStateException(
+                    "Building does not belong to this game"
+            );
+        }
+
+        for (Integer workerId : new ArrayList<>(
+                building.getStationedWorkerIds()
+        )) {
+            Unit unit = getUnitById(workerId).orElse(null);
+
+            if (unit instanceof Worker) {
+                Worker worker = (Worker) unit;
+
+                if (worker.isStationed() &&
+                        Integer.valueOf(building.getId()).equals(
+                                worker.getStationedBuildingId()
+                        )) {
+                    worker.leaveBuilding();
+                }
+            }
+        }
+
+        building.removeAllWorkers();
+        resourceBuildings.remove(building);
     }
 
     private void initializeStartingResources() {

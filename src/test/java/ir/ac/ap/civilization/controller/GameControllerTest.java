@@ -3,13 +3,13 @@ package ir.ac.ap.civilization.controller;
 import ir.ac.ap.civilization.model.building.TownHall;
 import ir.ac.ap.civilization.model.game.GameState;
 import ir.ac.ap.civilization.model.resource.ResourceType;
+import ir.ac.ap.civilization.model.technology.TechnologyType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import ir.ac.ap.civilization.model.technology.TechnologyType;
 
 class GameControllerTest {
 
@@ -25,7 +25,7 @@ class GameControllerTest {
         assertEquals(2, gameState.getTurnNumber());
 
         assertEquals(
-                64,
+                54,
                 gameState.getTownHall()
                         .getStockpile()
                         .getAmount(ResourceType.FOOD)
@@ -106,6 +106,7 @@ class GameControllerTest {
                 () -> new GameController(null)
         );
     }
+
     @Test
     void controllerShouldStartTechnologyResearch() {
         GameState gameState = new GameState();

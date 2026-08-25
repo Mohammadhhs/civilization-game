@@ -143,4 +143,18 @@ class UnitTest {
 
         assertFalse(worker.isStationed());
     }
+
+    @Test
+    void actionPointPenaltyShouldNotMakePointsNegative() {
+        Worker worker = new Worker(
+                1,
+                new HexCoordinate(1, 0)
+        );
+
+        worker.applyActionPointPenalty(2);
+        assertEquals(2, worker.getCurrentActionPoints());
+
+        worker.applyActionPointPenalty(10);
+        assertEquals(0, worker.getCurrentActionPoints());
+    }
 }

@@ -53,7 +53,7 @@ public final class HexInfoPanel extends JPanel {
     public HexInfoPanel() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(BACKGROUND_COLOR);
-        setPreferredSize(new Dimension(300, 0));
+        setPreferredSize(new Dimension(300, 520));
 
         setBorder(
                 BorderFactory.createCompoundBorder(
@@ -273,6 +273,12 @@ public final class HexInfoPanel extends JPanel {
                 resourceBuilding.getStationedWorkerCount() +
                 "/" +
                 resourceBuilding.getWorkerCapacity() +
+                ", upkeep " +
+                resourceBuilding
+                        .getConsecutiveMissedUpkeepTurns() +
+                "/" +
+                ResourceBuilding
+                        .MAXIMUM_CONSECUTIVE_MISSED_UPKEEP_TURNS +
                 ")";
     }
 

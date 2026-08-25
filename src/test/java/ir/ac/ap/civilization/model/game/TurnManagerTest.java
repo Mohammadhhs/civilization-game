@@ -64,7 +64,7 @@ class TurnManagerTest {
                 gameState.getTownHall().getStockpile();
 
         assertEquals(
-                64,
+                54,
                 stockpile.getAmount(ResourceType.FOOD)
         );
 
@@ -183,7 +183,7 @@ class TurnManagerTest {
         stockpile.add(ResourceType.FOOD, 100);
 
         assertEquals(
-                168,
+                148,
                 stockpile.getAmount(ResourceType.FOOD)
         );
 
@@ -200,7 +200,7 @@ class TurnManagerTest {
         );
 
         assertEquals(
-                172,
+                142,
                 stockpile.getAmount(ResourceType.FOOD)
         );
     }
@@ -224,7 +224,7 @@ class TurnManagerTest {
                 townHall.getStockpile();
 
         assertEquals(
-                72,
+                42,
                 stockpile.getAmount(ResourceType.FOOD)
         );
 

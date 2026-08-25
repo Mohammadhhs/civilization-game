@@ -10,6 +10,7 @@ public final class TurnManager {
     private final GameState gameState;
     private final ResourceBuildingService
             resourceBuildingService;
+    private final EconomyService economyService;
 
     public TurnManager(GameState gameState) {
         this.gameState = Objects.requireNonNull(
@@ -19,6 +20,9 @@ public final class TurnManager {
 
         this.resourceBuildingService =
                 new ResourceBuildingService(gameState);
+
+        this.economyService =
+                new EconomyService(gameState);
     }
 
     public void endTurn() {
@@ -35,6 +39,8 @@ public final class TurnManager {
         resourceBuildingService.produceAllResources();
 
         townHall.advanceProductionQueue();
+
+        economyService.applyEndTurnCosts();
 
         stockpile.applyCapacityLimit();
 

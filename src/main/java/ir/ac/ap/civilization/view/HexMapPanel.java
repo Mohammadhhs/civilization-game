@@ -472,7 +472,11 @@ public final class HexMapPanel extends JPanel {
             int x = center.x - width / 2;
             int y = center.y - height / 2;
 
-            graphics2D.setColor(BUILDING_COLOR);
+            graphics2D.setColor(
+                    building.isAtRiskFromUpkeep()
+                            ? new Color(205, 73, 73)
+                            : BUILDING_COLOR
+            );
             graphics2D.fillRoundRect(
                     x,
                     y,

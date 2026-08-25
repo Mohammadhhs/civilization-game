@@ -2,6 +2,8 @@ package ir.ac.ap.civilization.view;
 
 import ir.ac.ap.civilization.model.building.TownHall;
 import ir.ac.ap.civilization.model.building.TownHallLevel;
+import ir.ac.ap.civilization.model.game.EconomyService;
+import ir.ac.ap.civilization.model.game.EconomyStatus;
 import ir.ac.ap.civilization.model.game.GameState;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
@@ -21,6 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 
 public final class HudPanel extends JPanel {
+
+    private static final long serialVersionUID = 1L;
 
     private static final Color BACKGROUND_COLOR =
             new Color(30, 35, 43);
@@ -47,6 +51,8 @@ public final class HudPanel extends JPanel {
     private final JLabel townHallLevelLabel;
     private final JLabel townHallHpLabel;
     private final JLabel queueLabel;
+    private final JLabel economyLabel;
+    private final JLabel crisisLabel;
     private final JLabel statusLabel;
 
     private final Map<ResourceType, JLabel> resourceLabels;
@@ -59,7 +65,7 @@ public final class HudPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBackground(BACKGROUND_COLOR);
         setBorder(new EmptyBorder(12, 12, 12, 12));
-        setPreferredSize(new Dimension(0, 235));
+        setPreferredSize(new Dimension(0, 290));
 
         turnLabel = createInformationLabel("Turn: 1");
 
@@ -73,6 +79,20 @@ public final class HudPanel extends JPanel {
                 createInformationLabel("Production: Idle");
 
         queueLabel.setForeground(WARNING_COLOR);
+
+        economyLabel = createInformationLabel(
+                "Food upkeep: 10/turn | Economy stable"
+        );
+
+        crisisLabel = new JLabel(
+                "Economy stable",
+                SwingConstants.CENTER
+        );
+        crisisLabel.setFont(
+                new Font(Font.SANS_SERIF, Font.BOLD, 13)
+        );
+        crisisLabel.setForeground(ACCENT_COLOR);
+        crisisLabel.setAlignmentX(0.5f);
 
         statusLabel = new JLabel(
                 "Game ready",
@@ -173,6 +193,7 @@ public final class HudPanel extends JPanel {
         );
 
         refreshQueueInformation(townHall);
+        refreshEconomyInformation(gameState);
         refreshButtonStates(townHall);
 
         revalidate();
@@ -258,12 +279,21 @@ public final class HudPanel extends JPanel {
                 new Dimension(Integer.MAX_VALUE, 40)
         );
 
+        economyLabel.setAlignmentX(0.5f);
+        economyLabel.setMaximumSize(
+                new Dimension(Integer.MAX_VALUE, 36)
+        );
+
         informationPanel.add(headerPanel);
         informationPanel.add(Box.createVerticalStrut(8));
         informationPanel.add(resourcesPanel);
         informationPanel.add(Box.createVerticalStrut(8));
         informationPanel.add(queueLabel);
         informationPanel.add(Box.createVerticalStrut(6));
+        informationPanel.add(economyLabel);
+        informationPanel.add(Box.createVerticalStrut(5));
+        informationPanel.add(crisisLabel);
+        informationPanel.add(Box.createVerticalStrut(5));
         informationPanel.add(statusLabel);
 
         return informationPanel;
@@ -396,6 +426,73 @@ public final class HudPanel extends JPanel {
                         townHall.getRemainingProductionTurns() +
                         " turn(s) remaining"
         );
+    }
+
+    private void refreshEconomyInformation(
+            GameState gameState
+    ) {
+        EconomyStatus economyStatus =
+                gameState.getEconomyStatus();
+
+        int nextFoodUpkeep = Math.multiplyExact(
+                gameState.getUnits().size(),
+                EconomyService.FOOD_UPKEEP_PER_UNIT
+        );
+
+        economyLabel.setText(
+                "Food upkeep: " +
+                        nextFoodUpkeep +
+                        "/turn | Last paid: " +
+                        economyStatus.getPaidUnitFood() +
+                        "/" +
+                        economyStatus.getRequiredUnitFood() +
+                        " | Buildings at risk: " +
+                        economyStatus.getBuildingsAtRisk()
+        );
+
+        if (!economyStatus.hasResourceCrisis()) {
+            crisisLabel.setText("Economy stable");
+            crisisLabel.setForeground(ACCENT_COLOR);
+            return;
+        }
+
+        StringBuilder crisis = new StringBuilder("CRISIS: ");
+
+        if (economyStatus.isStarving()) {
+            crisis.append("Starvation - Food deficit ")
+                    .append(economyStatus.getFoodDeficit())
+                    .append(" (-")
+                    .append(
+                            EconomyService
+                                    .STARVATION_ACTION_POINT_PENALTY
+                    )
+                    .append(" AP)");
+        }
+
+        if (economyStatus.getBuildingsAtRisk() > 0) {
+            if (economyStatus.isStarving()) {
+                crisis.append(" | ");
+            }
+
+            crisis.append(
+                    economyStatus.getBuildingsAtRisk()
+            ).append(" building(s) missing upkeep");
+        }
+
+        if (economyStatus
+                .getBuildingsDestroyedLastTurn() > 0) {
+            if (crisis.length() > "CRISIS: ".length()) {
+                crisis.append(" | ");
+            }
+
+            crisis.append(
+                    economyStatus
+                            .getBuildingsDestroyedLastTurn()
+            ).append(" building(s) destroyed");
+        }
+
+        crisisLabel.setText(crisis.toString());
+        crisisLabel.setForeground(ERROR_COLOR);
     }
 
     private void refreshButtonStates(

@@ -116,6 +116,15 @@ public abstract class Unit {
         currentActionPoints = maximumActionPoints;
     }
 
+    public void applyActionPointPenalty(int penalty) {
+        validateActionPointCost(penalty);
+
+        currentActionPoints = Math.max(
+                0,
+                currentActionPoints - penalty
+        );
+    }
+
     void moveTo(HexCoordinate destination) {
         this.position = Objects.requireNonNull(
                 destination,
