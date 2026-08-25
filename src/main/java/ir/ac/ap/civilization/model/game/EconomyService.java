@@ -1,6 +1,6 @@
 package ir.ac.ap.civilization.model.game;
 
-import ir.ac.ap.civilization.model.building.ResourceBuilding;
+import ir.ac.ap.civilization.model.building.MaintainedBuilding;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
 import ir.ac.ap.civilization.model.unit.Unit;
@@ -81,19 +81,17 @@ public final class EconomyService {
 
         int destroyedBuildings = 0;
 
-        List<ResourceBuilding> buildings =
+        List<MaintainedBuilding> buildings =
                 new ArrayList<>(
-                        gameState.getResourceBuildings()
+                        gameState.getMaintainedBuildings()
                 );
 
-        for (ResourceBuilding building : buildings) {
+        for (MaintainedBuilding building : buildings) {
             if (stockpile.canAfford(
-                    building.getBuildingType()
-                            .getUpkeepCost()
+                    building.getUpkeepCost()
             )) {
                 stockpile.spend(
-                        building.getBuildingType()
-                                .getUpkeepCost()
+                        building.getUpkeepCost()
                 );
                 building.recordUpkeepPaid();
                 continue;
@@ -102,7 +100,7 @@ public final class EconomyService {
             building.recordMissedUpkeep();
 
             if (building.shouldBeDestroyedForUpkeep()) {
-                gameState.removeResourceBuilding(building);
+                gameState.removeMaintainedBuilding(building);
                 destroyedBuildings = Math.incrementExact(
                         destroyedBuildings
                 );
@@ -111,8 +109,8 @@ public final class EconomyService {
 
         int buildingsAtRisk = 0;
 
-        for (ResourceBuilding building :
-                gameState.getResourceBuildings()) {
+        for (MaintainedBuilding building :
+                gameState.getMaintainedBuildings()) {
             if (building.isAtRiskFromUpkeep()) {
                 buildingsAtRisk = Math.incrementExact(
                         buildingsAtRisk

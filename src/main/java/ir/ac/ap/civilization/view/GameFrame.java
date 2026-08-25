@@ -82,6 +82,9 @@ public final class GameFrame extends JFrame {
                             gameState.getResourceBuildingAt(
                                     tile.getCoordinate()
                             ).orElse(null),
+                            gameState.getSettlementAt(
+                                    tile.getCoordinate()
+                            ).orElse(null),
                             tile.getCoordinate().equals(
                                     gameState
                                             .getTownHallCoordinate()
@@ -140,6 +143,15 @@ public final class GameFrame extends JFrame {
                                 ),
                         buildingType.getDisplayName() +
                                 " constructed"
+                )
+        );
+
+        buildingActionsPanel.setSettlementAction(
+                builderId -> executeAction(
+                        () -> controller.constructSettlement(
+                                builderId
+                        ),
+                        "Settlement constructed; unit cap increased"
                 )
         );
 

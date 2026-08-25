@@ -2,6 +2,7 @@ package ir.ac.ap.civilization.view;
 
 import ir.ac.ap.civilization.controller.GameController;
 import ir.ac.ap.civilization.model.building.ResourceBuilding;
+import ir.ac.ap.civilization.model.building.Settlement;
 import ir.ac.ap.civilization.model.game.GameState;
 import ir.ac.ap.civilization.model.map.GameMap;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
@@ -62,6 +63,8 @@ public final class HexMapPanel extends JPanel {
             new Color(75, 78, 83);
     private static final Color BUILDING_COLOR =
             new Color(216, 145, 62);
+    private static final Color SETTLEMENT_COLOR =
+            new Color(143, 92, 184);
 
     private static final int[][] TERRITORY_EDGE_VERTICES = {
             {1, 2},
@@ -211,6 +214,7 @@ public final class HexMapPanel extends JPanel {
             }
 
             drawResourceBuildings(graphics2D);
+            drawSettlements(graphics2D);
             drawUnits(graphics2D);
             drawMovingUnit(graphics2D);
         } finally {
@@ -529,6 +533,51 @@ public final class HexMapPanel extends JPanel {
                         y + 5
                 );
             }
+        }
+    }
+
+    private void drawSettlements(Graphics2D graphics2D) {
+        for (Settlement settlement : gameState.getSettlements()) {
+            HexTile tile = gameMap
+                    .getTile(settlement.getPosition())
+                    .orElse(null);
+
+            if (tile == null || !tile.isDiscovered()) {
+                continue;
+            }
+
+            Point center = getTileCenter(
+                    settlement.getPosition()
+            );
+
+            int diameter = Math.max(
+                    25,
+                    (int) Math.round(
+                            34.0 * getZoomLevel()
+                    )
+            );
+
+            int x = center.x - diameter / 2;
+            int y = center.y - diameter / 2;
+
+            graphics2D.setColor(
+                    settlement.isAtRiskFromUpkeep()
+                            ? new Color(205, 73, 73)
+                            : SETTLEMENT_COLOR
+            );
+            graphics2D.fillOval(x, y, diameter, diameter);
+
+            graphics2D.setColor(Color.WHITE);
+            graphics2D.setStroke(
+                    new BasicStroke(
+                            (float) Math.max(
+                                    1.0,
+                                    1.5 * getZoomLevel()
+                            )
+                    )
+            );
+            graphics2D.drawOval(x, y, diameter, diameter);
+            drawCenteredText(graphics2D, "S", center, 12);
         }
     }
 

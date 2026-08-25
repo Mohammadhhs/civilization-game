@@ -2,16 +2,21 @@ package ir.ac.ap.civilization.model.building;
 
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.NaturalResourceType;
+import ir.ac.ap.civilization.model.resource.ResourceType;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public final class ResourceBuilding {
+public final class ResourceBuilding
+        implements MaintainedBuilding {
 
     public static final int
-            MAXIMUM_CONSECUTIVE_MISSED_UPKEEP_TURNS = 3;
+            MAXIMUM_CONSECUTIVE_MISSED_UPKEEP_TURNS =
+            MaintainedBuilding
+                    .MAXIMUM_CONSECUTIVE_MISSED_UPKEEP_TURNS;
 
     private final int id;
     private final BuildingType buildingType;
@@ -59,6 +64,7 @@ public final class ResourceBuilding {
         consecutiveMissedUpkeepTurns = 0;
     }
 
+    @Override
     public int getId() {
         return id;
     }
@@ -67,6 +73,7 @@ public final class ResourceBuilding {
         return buildingType;
     }
 
+    @Override
     public HexCoordinate getPosition() {
         return position;
     }
@@ -97,23 +104,33 @@ public final class ResourceBuilding {
         return stationedWorkerIds.contains(workerId);
     }
 
+    @Override
+    public Map<ResourceType, Integer> getUpkeepCost() {
+        return buildingType.getUpkeepCost();
+    }
+
+    @Override
     public int getConsecutiveMissedUpkeepTurns() {
         return consecutiveMissedUpkeepTurns;
     }
 
+    @Override
     public boolean isAtRiskFromUpkeep() {
         return consecutiveMissedUpkeepTurns > 0;
     }
 
+    @Override
     public boolean shouldBeDestroyedForUpkeep() {
         return consecutiveMissedUpkeepTurns >=
                 MAXIMUM_CONSECUTIVE_MISSED_UPKEEP_TURNS;
     }
 
+    @Override
     public void recordUpkeepPaid() {
         consecutiveMissedUpkeepTurns = 0;
     }
 
+    @Override
     public void recordMissedUpkeep() {
         consecutiveMissedUpkeepTurns = Math.incrementExact(
                 consecutiveMissedUpkeepTurns

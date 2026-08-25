@@ -1,6 +1,7 @@
 package ir.ac.ap.civilization.view;
 
 import ir.ac.ap.civilization.model.building.ResourceBuilding;
+import ir.ac.ap.civilization.model.building.Settlement;
 import ir.ac.ap.civilization.model.map.HexTile;
 import ir.ac.ap.civilization.model.map.NaturalResourceType;
 import ir.ac.ap.civilization.model.map.TerrainType;
@@ -117,6 +118,7 @@ public final class HexInfoPanel extends JPanel {
             HexTile tile,
             Unit unit,
             ResourceBuilding resourceBuilding,
+            Settlement settlement,
             boolean containsTownHall
     ) {
         Objects.requireNonNull(
@@ -180,8 +182,9 @@ public final class HexInfoPanel extends JPanel {
                     "Structure: " +
                             (containsTownHall
                                     ? "Town Hall"
-                                    : getBuildingDisplayText(
-                                            resourceBuilding
+                                    : getStructureDisplayText(
+                                            resourceBuilding,
+                                            settlement
                                     ))
             );
         }
@@ -260,9 +263,22 @@ public final class HexInfoPanel extends JPanel {
         }
     }
 
-    private String getBuildingDisplayText(
-            ResourceBuilding resourceBuilding
+    private String getStructureDisplayText(
+            ResourceBuilding resourceBuilding,
+            Settlement settlement
     ) {
+        if (settlement != null) {
+            return "Settlement (Unit Cap +" +
+                    settlement.getUnitCapBonus() +
+                    ", upkeep " +
+                    settlement
+                            .getConsecutiveMissedUpkeepTurns() +
+                    "/" +
+                    Settlement
+                            .MAXIMUM_CONSECUTIVE_MISSED_UPKEEP_TURNS +
+                    ")";
+        }
+
         if (resourceBuilding == null) {
             return "None";
         }

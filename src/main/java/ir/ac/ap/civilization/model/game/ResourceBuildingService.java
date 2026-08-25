@@ -281,7 +281,9 @@ public final class ResourceBuildingService {
         }
 
         if (gameState.getResourceBuildingAt(position)
-                .isPresent()) {
+                .isPresent() ||
+                gameState.getSettlementAt(position)
+                        .isPresent()) {
             throw new IllegalStateException(
                     "This hex already contains a building"
             );

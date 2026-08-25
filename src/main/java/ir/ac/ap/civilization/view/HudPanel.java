@@ -48,6 +48,7 @@ public final class HudPanel extends JPanel {
             new Color(224, 92, 92);
 
     private final JLabel turnLabel;
+    private final JLabel unitCapLabel;
     private final JLabel townHallLevelLabel;
     private final JLabel townHallHpLabel;
     private final JLabel queueLabel;
@@ -68,6 +69,8 @@ public final class HudPanel extends JPanel {
         setPreferredSize(new Dimension(0, 290));
 
         turnLabel = createInformationLabel("Turn: 1");
+
+        unitCapLabel = createInformationLabel("Units: 5/8");
 
         townHallLevelLabel =
                 createInformationLabel("Town Hall: Base Camp");
@@ -174,6 +177,19 @@ public final class HudPanel extends JPanel {
                 "Turn: " + gameState.getTurnNumber()
         );
 
+        unitCapLabel.setText(
+                "Units: " +
+                        gameState.getActiveUnitCount() +
+                        "/" +
+                        gameState.getUnitCap()
+        );
+
+        unitCapLabel.setForeground(
+                gameState.isOverUnitCap()
+                        ? ERROR_COLOR
+                        : TEXT_COLOR
+        );
+
         townHallLevelLabel.setText(
                 "Town Hall: " +
                         townHall.getCurrentLevel()
@@ -229,11 +245,12 @@ public final class HudPanel extends JPanel {
         informationPanel.setOpaque(false);
 
         JPanel headerPanel =
-                new JPanel(new GridLayout(1, 3, 8, 0));
+                new JPanel(new GridLayout(1, 4, 8, 0));
 
         headerPanel.setOpaque(false);
 
         headerPanel.add(turnLabel);
+        headerPanel.add(unitCapLabel);
         headerPanel.add(townHallLevelLabel);
         headerPanel.add(townHallHpLabel);
 

@@ -3,6 +3,8 @@ package ir.ac.ap.civilization.model.game;
 import ir.ac.ap.civilization.model.building.TownHall;
 import ir.ac.ap.civilization.model.building.BuildingType;
 import ir.ac.ap.civilization.model.building.ResourceBuilding;
+import ir.ac.ap.civilization.model.building.MaintainedBuilding;
+import ir.ac.ap.civilization.model.building.Settlement;
 import ir.ac.ap.civilization.model.map.FogOfWarService;
 import ir.ac.ap.civilization.model.map.GameMap;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
@@ -30,6 +32,7 @@ public final class GameState {
     private static final int STARTING_STONE = 60;
     private static final int STARTING_IRON = 0;
     private static final int STARTING_TERRITORY_RADIUS = 2;
+    private static final int BASE_UNIT_CAP = 8;
 
     private static final HexCoordinate TOWN_HALL_COORDINATE =
             new HexCoordinate(0, 0);
@@ -39,6 +42,7 @@ public final class GameState {
     private final PlayerTerritory playerTerritory;
     private final List<Unit> units;
     private final List<ResourceBuilding> resourceBuildings;
+    private final List<Settlement> settlements;
     private final FogOfWarService fogOfWarService;
     private final EconomyStatus economyStatus;
 
@@ -66,6 +70,7 @@ public final class GameState {
         this.playerTerritory = new PlayerTerritory(gameMap);
         this.units = new ArrayList<>();
         this.resourceBuildings = new ArrayList<>();
+        this.settlements = new ArrayList<>();
         this.fogOfWarService = new FogOfWarService();
         this.economyStatus = new EconomyStatus();
 
@@ -107,6 +112,42 @@ public final class GameState {
         return Collections.unmodifiableList(resourceBuildings);
     }
 
+    public List<Settlement> getSettlements() {
+        return Collections.unmodifiableList(settlements);
+    }
+
+    public int getActiveUnitCount() {
+        return units.size();
+    }
+
+    public int getUnitCap() {
+        int unitCap = BASE_UNIT_CAP;
+
+        for (Settlement settlement : settlements) {
+            unitCap = Math.addExact(
+                    unitCap,
+                    settlement.getUnitCapBonus()
+            );
+        }
+
+        return unitCap;
+    }
+
+    public int getAvailableUnitSlots() {
+        return Math.max(
+                0,
+                getUnitCap() - getActiveUnitCount()
+        );
+    }
+
+    public boolean canCreateUnit() {
+        return getActiveUnitCount() < getUnitCap();
+    }
+
+    public boolean isOverUnitCap() {
+        return getActiveUnitCount() > getUnitCap();
+    }
+
     public Optional<ResourceBuilding> getResourceBuildingById(
             int buildingId
     ) {
@@ -130,6 +171,23 @@ public final class GameState {
         for (ResourceBuilding building : resourceBuildings) {
             if (building.getPosition().equals(coordinate)) {
                 return Optional.of(building);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    public Optional<Settlement> getSettlementAt(
+            HexCoordinate coordinate
+    ) {
+        Objects.requireNonNull(
+                coordinate,
+                "Coordinate cannot be null"
+        );
+
+        for (Settlement settlement : settlements) {
+            if (settlement.getPosition().equals(coordinate)) {
+                return Optional.of(settlement);
             }
         }
 
@@ -188,7 +246,8 @@ public final class GameState {
             HexCoordinate position,
             NaturalResourceType naturalResourceType
     ) {
-        if (getResourceBuildingAt(position).isPresent()) {
+        if (getResourceBuildingAt(position).isPresent() ||
+                getSettlementAt(position).isPresent()) {
             throw new IllegalStateException(
                     "A resource building already exists on this hex"
             );
@@ -203,6 +262,28 @@ public final class GameState {
 
         resourceBuildings.add(building);
         return building;
+    }
+
+    Settlement addSettlement(HexCoordinate position) {
+        Objects.requireNonNull(
+                position,
+                "Settlement position cannot be null"
+        );
+
+        if (getResourceBuildingAt(position).isPresent() ||
+                getSettlementAt(position).isPresent()) {
+            throw new IllegalStateException(
+                    "A building already exists on this hex"
+            );
+        }
+
+        Settlement settlement = new Settlement(
+                createNextBuildingId(),
+                position
+        );
+
+        settlements.add(settlement);
+        return settlement;
     }
 
     void removeUnit(Unit unit) {
@@ -249,6 +330,53 @@ public final class GameState {
 
         building.removeAllWorkers();
         resourceBuildings.remove(building);
+    }
+
+    void removeMaintainedBuilding(
+            MaintainedBuilding building
+    ) {
+        Objects.requireNonNull(
+                building,
+                "Building cannot be null"
+        );
+
+        if (building instanceof ResourceBuilding) {
+            removeResourceBuilding(
+                    (ResourceBuilding) building
+            );
+            return;
+        }
+
+        if (building instanceof Settlement) {
+            if (!settlements.remove(building)) {
+                throw new IllegalStateException(
+                        "Settlement does not belong to this game"
+                );
+            }
+            return;
+        }
+
+        throw new IllegalArgumentException(
+                "Unknown maintained building type"
+        );
+    }
+
+    List<MaintainedBuilding> getMaintainedBuildings() {
+        List<MaintainedBuilding> buildings =
+                new ArrayList<>();
+
+        buildings.addAll(resourceBuildings);
+        buildings.addAll(settlements);
+
+        Collections.sort(
+                buildings,
+                (first, second) -> Integer.compare(
+                        first.getId(),
+                        second.getId()
+                )
+        );
+
+        return Collections.unmodifiableList(buildings);
     }
 
     private void initializeStartingResources() {

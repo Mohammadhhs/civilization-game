@@ -33,16 +33,20 @@ public final class BuildingActionsPanel extends JPanel {
             new Color(205, 125, 55);
     private static final Color WORKER_COLOR =
             new Color(70, 145, 205);
+    private static final Color SETTLEMENT_COLOR =
+            new Color(143, 92, 184);
 
     private final GameController controller;
     private final JComboBox<BuildingType> buildingTypeBox;
     private final JLabel costLabel;
     private final JButton buildButton;
+    private final JButton settlementButton;
     private final JButton stationButton;
     private final JButton unstationButton;
 
     private Unit selectedUnit;
     private BiConsumer<Integer, BuildingType> buildAction;
+    private IntConsumer settlementAction;
     private IntConsumer stationAction;
     private IntConsumer unstationAction;
 
@@ -66,6 +70,8 @@ public final class BuildingActionsPanel extends JPanel {
         );
 
         buildAction = (unitId, type) -> {
+        };
+        settlementAction = unitId -> {
         };
         stationAction = unitId -> {
         };
@@ -93,6 +99,13 @@ public final class BuildingActionsPanel extends JPanel {
                 "Build",
                 BUILD_COLOR
         );
+        settlementButton = createButton(
+                "Build Settlement",
+                SETTLEMENT_COLOR
+        );
+        settlementButton.setPreferredSize(
+                new Dimension(170, 36)
+        );
         stationButton = createButton(
                 "Station Worker",
                 WORKER_COLOR
@@ -115,6 +128,16 @@ public final class BuildingActionsPanel extends JPanel {
                         buildAction.accept(
                                 selectedUnit.getId(),
                                 getSelectedBuildingType()
+                        );
+                    }
+                }
+        );
+
+        settlementButton.addActionListener(
+                event -> {
+                    if (selectedUnit != null) {
+                        settlementAction.accept(
+                                selectedUnit.getId()
                         );
                     }
                 }
@@ -144,6 +167,7 @@ public final class BuildingActionsPanel extends JPanel {
         add(buildingTypeBox);
         add(costLabel);
         add(buildButton);
+        add(settlementButton);
         add(stationButton);
         add(unstationButton);
 
@@ -166,6 +190,15 @@ public final class BuildingActionsPanel extends JPanel {
         this.stationAction = Objects.requireNonNull(
                 stationAction,
                 "Station action cannot be null"
+        );
+    }
+
+    public void setSettlementAction(
+            IntConsumer settlementAction
+    ) {
+        this.settlementAction = Objects.requireNonNull(
+                settlementAction,
+                "Settlement action cannot be null"
         );
     }
 
@@ -202,6 +235,13 @@ public final class BuildingActionsPanel extends JPanel {
                                 )
         );
 
+        settlementButton.setEnabled(
+                builderSelected &&
+                        controller.canConstructSettlement(
+                                selectedUnit.getId()
+                        )
+        );
+
         stationButton.setEnabled(
                 workerSelected &&
                         controller.canStationWorker(
@@ -219,6 +259,14 @@ public final class BuildingActionsPanel extends JPanel {
         buildButton.setToolTipText(
                 builderSelected
                         ? "Build instantly using AP, resources and one charge"
+                        : "Select a Builder"
+        );
+
+        settlementButton.setToolTipText(
+                builderSelected
+                        ? "Requires Settlement Construction, " +
+                        "Wood 60, Stone 50, Iron 20, 3 AP " +
+                        "and one charge"
                         : "Select a Builder"
         );
 

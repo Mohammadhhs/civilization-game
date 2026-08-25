@@ -2,8 +2,10 @@ package ir.ac.ap.civilization.controller;
 
 import ir.ac.ap.civilization.model.building.BuildingType;
 import ir.ac.ap.civilization.model.building.ResourceBuilding;
+import ir.ac.ap.civilization.model.building.Settlement;
 import ir.ac.ap.civilization.model.game.GameState;
 import ir.ac.ap.civilization.model.game.ResourceBuildingService;
+import ir.ac.ap.civilization.model.game.SettlementConstructionService;
 import ir.ac.ap.civilization.model.game.TurnManager;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.HexTile;
@@ -21,6 +23,8 @@ public final class GameController {
     private final UnitMovementService unitMovementService;
     private final ResourceBuildingService
             resourceBuildingService;
+    private final SettlementConstructionService
+            settlementConstructionService;
 
     public GameController(GameState gameState) {
         this.gameState = Objects.requireNonNull(
@@ -35,6 +39,9 @@ public final class GameController {
 
         this.resourceBuildingService =
                 new ResourceBuildingService(gameState);
+
+        this.settlementConstructionService =
+                new SettlementConstructionService(gameState);
     }
 
     public GameState getGameState() {
@@ -96,6 +103,16 @@ public final class GameController {
                 builderId,
                 buildingType
         );
+    }
+
+    public boolean canConstructSettlement(int builderId) {
+        return settlementConstructionService
+                .canConstruct(builderId);
+    }
+
+    public Settlement constructSettlement(int builderId) {
+        return settlementConstructionService
+                .construct(builderId);
     }
 
     public boolean canStationWorker(int workerId) {
