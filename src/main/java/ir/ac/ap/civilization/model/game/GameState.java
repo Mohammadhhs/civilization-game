@@ -5,6 +5,9 @@ import ir.ac.ap.civilization.model.building.BuildingType;
 import ir.ac.ap.civilization.model.building.ResourceBuilding;
 import ir.ac.ap.civilization.model.building.MaintainedBuilding;
 import ir.ac.ap.civilization.model.building.Settlement;
+import ir.ac.ap.civilization.model.entity.EntityKey;
+import ir.ac.ap.civilization.model.entity.EntityKind;
+import ir.ac.ap.civilization.model.entity.GameEntity;
 import ir.ac.ap.civilization.model.map.FogOfWarService;
 import ir.ac.ap.civilization.model.map.GameMap;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
@@ -14,6 +17,8 @@ import ir.ac.ap.civilization.model.map.NaturalResourceType;
 import ir.ac.ap.civilization.model.map.PlayerTerritory;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
+import ir.ac.ap.civilization.model.random.DeterministicRandomSource;
+import ir.ac.ap.civilization.model.random.RandomSource;
 import ir.ac.ap.civilization.model.unit.Builder;
 import ir.ac.ap.civilization.model.unit.Explorer;
 import ir.ac.ap.civilization.model.unit.Unit;
@@ -48,10 +53,12 @@ public final class GameState {
     private final FogOfWarService fogOfWarService;
     private final UnitFactory unitFactory;
     private final EconomyStatus economyStatus;
+    private final DeterministicRandomSource randomSource;
 
     private int turnNumber;
     private int nextUnitId;
     private int nextBuildingId;
+    private GameOperation currentOperation;
 
     public GameState() {
         this(HexMapGenerator.DEFAULT_SEED);
@@ -77,6 +84,10 @@ public final class GameState {
         this.fogOfWarService = new FogOfWarService();
         this.unitFactory = new UnitFactory();
         this.economyStatus = new EconomyStatus();
+        this.randomSource = new DeterministicRandomSource(
+                gameMap.getSeed()
+        );
+        this.currentOperation = GameOperation.STABLE;
 
         initializeStartingResources();
         initializeStartingTerritory();
@@ -106,6 +117,18 @@ public final class GameState {
 
     public EconomyStatus getEconomyStatus() {
         return economyStatus;
+    }
+
+    public RandomSource getRandomSource() {
+        return randomSource;
+    }
+
+    public GameOperation getCurrentOperation() {
+        return currentOperation;
+    }
+
+    public boolean isStableForPersistence() {
+        return currentOperation == GameOperation.STABLE;
     }
 
     public List<Unit> getUnits() {
@@ -200,6 +223,59 @@ public final class GameState {
         return Optional.empty();
     }
 
+    public Optional<MaintainedBuilding> getBuildingById(
+            int buildingId
+    ) {
+        Optional<ResourceBuilding> resourceBuilding =
+                getResourceBuildingById(buildingId);
+
+        if (resourceBuilding.isPresent()) {
+            return Optional.<MaintainedBuilding>of(
+                    resourceBuilding.get()
+            );
+        }
+
+        for (Settlement settlement : settlements) {
+            if (settlement.getId() == buildingId) {
+                return Optional.<MaintainedBuilding>of(settlement);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    public Optional<GameEntity> getEntity(EntityKey entityKey) {
+        Objects.requireNonNull(
+                entityKey,
+                "Entity key cannot be null"
+        );
+
+        EntityKind kind = entityKey.getKind();
+
+        if (kind == EntityKind.TOWN_HALL) {
+            return townHall.getId() == entityKey.getId()
+                    ? Optional.<GameEntity>of(townHall)
+                    : Optional.<GameEntity>empty();
+        }
+
+        if (kind == EntityKind.UNIT) {
+            Optional<Unit> unit = getUnitById(entityKey.getId());
+            return unit.isPresent()
+                    ? Optional.<GameEntity>of(unit.get())
+                    : Optional.<GameEntity>empty();
+        }
+
+        if (kind == EntityKind.BUILDING) {
+            Optional<MaintainedBuilding> building =
+                    getBuildingById(entityKey.getId());
+            return building.isPresent()
+                    ? Optional.<GameEntity>of(building.get())
+                    : Optional.<GameEntity>empty();
+        }
+
+        return Optional.empty();
+    }
+
     public Optional<ResourceBuilding> getResourceBuildingAt(
             HexCoordinate coordinate
     ) {
@@ -274,6 +350,33 @@ public final class GameState {
 
     void incrementTurnNumber() {
         turnNumber = Math.incrementExact(turnNumber);
+    }
+
+    void beginOperation(GameOperation operation) {
+        Objects.requireNonNull(
+                operation,
+                "Game operation cannot be null"
+        );
+        if (operation == GameOperation.STABLE ||
+                operation == GameOperation.ERROR) {
+            throw new IllegalArgumentException(
+                    "Cannot begin a terminal game operation"
+            );
+        }
+        if (!isStableForPersistence()) {
+            throw new IllegalStateException(
+                    "Another game operation is already active"
+            );
+        }
+        currentOperation = operation;
+    }
+
+    void completeOperation() {
+        currentOperation = GameOperation.STABLE;
+    }
+
+    void failOperation() {
+        currentOperation = GameOperation.ERROR;
     }
 
     void restoreAllUnitActionPoints() {

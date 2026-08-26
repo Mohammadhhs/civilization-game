@@ -1,15 +1,27 @@
 package ir.ac.ap.civilization.model.unit;
 
+import ir.ac.ap.civilization.model.entity.Damageable;
+import ir.ac.ap.civilization.model.entity.EntityKey;
+import ir.ac.ap.civilization.model.entity.EntityKind;
+import ir.ac.ap.civilization.model.entity.GameEntity;
+import ir.ac.ap.civilization.model.entity.HitPoints;
+import ir.ac.ap.civilization.model.entity.Owner;
+import ir.ac.ap.civilization.model.entity.OwnedEntity;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 
 import java.util.Objects;
 
-public abstract class Unit {
+public abstract class Unit implements
+        GameEntity, OwnedEntity, Damageable {
+
+    private static final int DEFAULT_MAXIMUM_HIT_POINTS = 100;
 
     private final int id;
     private final UnitType unitType;
     private final int maximumActionPoints;
     private final int visionRadius;
+    private final Owner owner;
+    private final HitPoints hitPoints;
 
     private int currentActionPoints;
     private HexCoordinate position;
@@ -20,6 +32,22 @@ public abstract class Unit {
             int maximumActionPoints,
             int visionRadius,
             HexCoordinate position
+    ) {
+        this(id, unitType, maximumActionPoints, visionRadius,
+                position, Owner.PLAYER,
+                DEFAULT_MAXIMUM_HIT_POINTS,
+                DEFAULT_MAXIMUM_HIT_POINTS);
+    }
+
+    protected Unit(
+            int id,
+            UnitType unitType,
+            int maximumActionPoints,
+            int visionRadius,
+            HexCoordinate position,
+            Owner owner,
+            int currentHitPoints,
+            int maximumHitPoints
     ) {
         if (id <= 0) {
             throw new IllegalArgumentException(
@@ -49,6 +77,14 @@ public abstract class Unit {
         this.maximumActionPoints = maximumActionPoints;
         this.currentActionPoints = maximumActionPoints;
         this.visionRadius = visionRadius;
+        this.owner = Objects.requireNonNull(
+                owner,
+                "Unit owner cannot be null"
+        );
+        this.hitPoints = new HitPoints(
+                currentHitPoints,
+                maximumHitPoints
+        );
 
         this.position = Objects.requireNonNull(
                 position,
@@ -58,6 +94,36 @@ public abstract class Unit {
 
     public int getId() {
         return id;
+    }
+
+    @Override
+    public EntityKey getEntityKey() {
+        return new EntityKey(EntityKind.UNIT, id);
+    }
+
+    @Override
+    public Owner getOwner() {
+        return owner;
+    }
+
+    @Override
+    public int getCurrentHitPoints() {
+        return hitPoints.getCurrent();
+    }
+
+    @Override
+    public int getMaximumHitPoints() {
+        return hitPoints.getMaximum();
+    }
+
+    @Override
+    public void takeDamage(int amount) {
+        hitPoints.damage(amount);
+    }
+
+    @Override
+    public void heal(int amount) {
+        hitPoints.heal(amount);
     }
 
     public UnitType getUnitType() {

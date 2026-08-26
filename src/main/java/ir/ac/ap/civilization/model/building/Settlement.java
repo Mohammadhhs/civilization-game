@@ -1,5 +1,9 @@
 package ir.ac.ap.civilization.model.building;
 
+import ir.ac.ap.civilization.model.entity.EntityKey;
+import ir.ac.ap.civilization.model.entity.EntityKind;
+import ir.ac.ap.civilization.model.entity.HitPoints;
+import ir.ac.ap.civilization.model.entity.Owner;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.resource.ResourceType;
 
@@ -13,6 +17,7 @@ public final class Settlement implements MaintainedBuilding {
     public static final int UNIT_CAP_BONUS = 5;
     public static final int CONSTRUCTION_ACTION_POINT_COST = 3;
     private static final int VISION_RADIUS = 2;
+    private static final int MAXIMUM_HIT_POINTS = 150;
 
     private static final Map<ResourceType, Integer>
             CONSTRUCTION_COST = createCost(60, 50, 20);
@@ -22,12 +27,25 @@ public final class Settlement implements MaintainedBuilding {
 
     private final int id;
     private final HexCoordinate position;
+    private final Owner owner;
+    private final HitPoints hitPoints;
 
     private int consecutiveMissedUpkeepTurns;
 
     public Settlement(
             int id,
             HexCoordinate position
+    ) {
+        this(id, position, Owner.PLAYER,
+                MAXIMUM_HIT_POINTS, MAXIMUM_HIT_POINTS);
+    }
+
+    public Settlement(
+            int id,
+            HexCoordinate position,
+            Owner owner,
+            int currentHitPoints,
+            int maximumHitPoints
     ) {
         if (id <= 0) {
             throw new IllegalArgumentException(
@@ -40,12 +58,50 @@ public final class Settlement implements MaintainedBuilding {
                 position,
                 "Settlement position cannot be null"
         );
+        this.owner = Objects.requireNonNull(
+                owner,
+                "Settlement owner cannot be null"
+        );
+        this.hitPoints = new HitPoints(
+                currentHitPoints,
+                maximumHitPoints
+        );
         this.consecutiveMissedUpkeepTurns = 0;
     }
 
     @Override
     public int getId() {
         return id;
+    }
+
+    @Override
+    public EntityKey getEntityKey() {
+        return new EntityKey(EntityKind.BUILDING, id);
+    }
+
+    @Override
+    public Owner getOwner() {
+        return owner;
+    }
+
+    @Override
+    public int getCurrentHitPoints() {
+        return hitPoints.getCurrent();
+    }
+
+    @Override
+    public int getMaximumHitPoints() {
+        return hitPoints.getMaximum();
+    }
+
+    @Override
+    public void takeDamage(int amount) {
+        hitPoints.damage(amount);
+    }
+
+    @Override
+    public void heal(int amount) {
+        hitPoints.heal(amount);
     }
 
     @Override

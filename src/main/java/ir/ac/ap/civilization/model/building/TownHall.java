@@ -1,5 +1,11 @@
 package ir.ac.ap.civilization.model.building;
 
+import ir.ac.ap.civilization.model.entity.Damageable;
+import ir.ac.ap.civilization.model.entity.EntityKey;
+import ir.ac.ap.civilization.model.entity.EntityKind;
+import ir.ac.ap.civilization.model.entity.GameEntity;
+import ir.ac.ap.civilization.model.entity.Owner;
+import ir.ac.ap.civilization.model.entity.OwnedEntity;
 import ir.ac.ap.civilization.model.production.ProductionCommand;
 import ir.ac.ap.civilization.model.production.UnitProductionCommand;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
@@ -11,7 +17,8 @@ import ir.ac.ap.civilization.model.unit.UnitType;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class TownHall {
+public final class TownHall implements
+        GameEntity, OwnedEntity, Damageable {
 
     private static final int BASE_MAXIMUM_HP = 200;
     private static final int BASE_FOOD_PRODUCTION = 4;
@@ -40,6 +47,21 @@ public final class TownHall {
                 new TechnologyManager();
     }
 
+    @Override
+    public int getId() {
+        return 1;
+    }
+
+    @Override
+    public EntityKey getEntityKey() {
+        return new EntityKey(EntityKind.TOWN_HALL, getId());
+    }
+
+    @Override
+    public Owner getOwner() {
+        return Owner.PLAYER;
+    }
+
     public TownHallLevel getCurrentLevel() {
         return currentLevel;
     }
@@ -48,8 +70,18 @@ public final class TownHall {
         return currentHp;
     }
 
+    @Override
+    public int getCurrentHitPoints() {
+        return getCurrentHp();
+    }
+
     public int getMaximumHp() {
         return maximumHp;
+    }
+
+    @Override
+    public int getMaximumHitPoints() {
+        return getMaximumHp();
     }
 
     public ResourceStockpile getStockpile() {

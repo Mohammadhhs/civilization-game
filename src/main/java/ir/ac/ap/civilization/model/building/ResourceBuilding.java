@@ -1,5 +1,9 @@
 package ir.ac.ap.civilization.model.building;
 
+import ir.ac.ap.civilization.model.entity.EntityKey;
+import ir.ac.ap.civilization.model.entity.EntityKind;
+import ir.ac.ap.civilization.model.entity.HitPoints;
+import ir.ac.ap.civilization.model.entity.Owner;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.NaturalResourceType;
 import ir.ac.ap.civilization.model.resource.ResourceType;
@@ -14,6 +18,7 @@ public final class ResourceBuilding
         implements MaintainedBuilding {
 
     private static final int VISION_RADIUS = 1;
+    private static final int MAXIMUM_HIT_POINTS = 100;
 
     public static final int
             MAXIMUM_CONSECUTIVE_MISSED_UPKEEP_TURNS =
@@ -25,6 +30,8 @@ public final class ResourceBuilding
     private final HexCoordinate position;
     private final NaturalResourceType naturalResourceType;
     private final LinkedHashSet<Integer> stationedWorkerIds;
+    private final Owner owner;
+    private final HitPoints hitPoints;
 
     private int consecutiveMissedUpkeepTurns;
 
@@ -33,6 +40,20 @@ public final class ResourceBuilding
             BuildingType buildingType,
             HexCoordinate position,
             NaturalResourceType naturalResourceType
+    ) {
+        this(id, buildingType, position, naturalResourceType,
+                Owner.PLAYER, MAXIMUM_HIT_POINTS,
+                MAXIMUM_HIT_POINTS);
+    }
+
+    public ResourceBuilding(
+            int id,
+            BuildingType buildingType,
+            HexCoordinate position,
+            NaturalResourceType naturalResourceType,
+            Owner owner,
+            int currentHitPoints,
+            int maximumHitPoints
     ) {
         if (id <= 0) {
             throw new IllegalArgumentException(
@@ -53,6 +74,14 @@ public final class ResourceBuilding
                 naturalResourceType,
                 "Natural resource type cannot be null"
         );
+        this.owner = Objects.requireNonNull(
+                owner,
+                "Building owner cannot be null"
+        );
+        this.hitPoints = new HitPoints(
+                currentHitPoints,
+                maximumHitPoints
+        );
 
         if (!buildingType.supportsNaturalResource(
                 naturalResourceType
@@ -69,6 +98,36 @@ public final class ResourceBuilding
     @Override
     public int getId() {
         return id;
+    }
+
+    @Override
+    public EntityKey getEntityKey() {
+        return new EntityKey(EntityKind.BUILDING, id);
+    }
+
+    @Override
+    public Owner getOwner() {
+        return owner;
+    }
+
+    @Override
+    public int getCurrentHitPoints() {
+        return hitPoints.getCurrent();
+    }
+
+    @Override
+    public int getMaximumHitPoints() {
+        return hitPoints.getMaximum();
+    }
+
+    @Override
+    public void takeDamage(int amount) {
+        hitPoints.damage(amount);
+    }
+
+    @Override
+    public void heal(int amount) {
+        hitPoints.heal(amount);
     }
 
     public BuildingType getBuildingType() {
