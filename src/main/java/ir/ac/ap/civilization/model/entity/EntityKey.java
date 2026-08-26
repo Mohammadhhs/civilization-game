@@ -1,8 +1,9 @@
 package ir.ac.ap.civilization.model.entity;
 
 import java.util.Objects;
+import java.io.Serializable;
 
-public final class EntityKey {
+public final class EntityKey implements Serializable {
 
     private final EntityKind kind;
     private final int id;

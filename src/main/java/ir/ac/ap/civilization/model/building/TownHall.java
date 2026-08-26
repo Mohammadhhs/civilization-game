@@ -122,6 +122,8 @@ public final class TownHall implements
         );
 
         return !isBusy() &&
+                currentLevel.getLevelNumber() >=
+                        technologyType.getMinimumTownHallLevel() &&
                 technologyManager.canResearch(technologyType) &&
                 stockpile.canAfford(
                         technologyType.getResearchCost()
@@ -272,6 +274,13 @@ public final class TownHall implements
             );
         }
 
+        if (currentLevel.getLevelNumber() <
+                technologyType.getMinimumTownHallLevel()) {
+            throw new IllegalStateException(
+                    "Town Hall level is too low for this technology"
+            );
+        }
+
         if (!technologyManager
                 .arePrerequisitesCompleted(technologyType)) {
             throw new IllegalStateException(
@@ -401,6 +410,11 @@ public final class TownHall implements
             TechnologyType technologyType
     ) {
         technologyManager.completeResearch(technologyType);
+
+        if (technologyType == TechnologyType.DEFENSIVE_ARCHITECTURE) {
+            maximumHp = Math.max(maximumHp, 250);
+            currentHp = Math.min(maximumHp, currentHp + 50);
+        }
 
         storageTechnologyBonus +=
                 technologyType.getStorageCapacityBonus();

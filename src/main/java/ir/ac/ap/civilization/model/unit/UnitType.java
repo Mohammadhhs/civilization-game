@@ -9,36 +9,64 @@ import java.util.Map;
 public enum UnitType {
 
     BUILDER(
-            "Builder", "B", 2,
+            "Builder", "B", 2, false, 100, 5, 0,
             createCost(0, 30, 10, 0)
     ),
     WORKER(
-            "Worker", "W", 1,
+            "Worker", "W", 1, false, 100, 4, 0,
             createCost(15, 10, 0, 0)
     ),
     EXPLORER(
-            "Explorer", "E", 2,
+            "Explorer", "E", 2, false, 100, 6, 0,
             createCost(20, 15, 0, 0)
     ),
     BORDER_EXPANDER(
-            "Border Expander", "BE", 3,
+            "Border Expander", "BE", 3, false, 100, 4, 0,
             createCost(20, 30, 20, 0)
+    ),
+    SWORDSMAN(
+            "Swordsman", "SW", 2, true, 100, 3, 1,
+            createCost(20, 40, 0, 0)
+    ),
+    ARCHER(
+            "Archer", "AR", 3, true, 70, 3, 2,
+            createCost(30, 30, 0, 10)
+    ),
+    CAVALRY(
+            "Cavalry", "CV", 3, true, 80, 5, 1,
+            createCost(40, 20, 0, 20)
+    ),
+    CATAPULT(
+            "Catapult", "CT", 4, true, 50, 2, 2,
+            createCost(20, 40, 30, 20)
     );
 
     private final String displayName;
     private final String mapSymbol;
     private final int productionTurns;
+    private final boolean military;
+    private final int maximumHitPoints;
+    private final int maximumActionPoints;
+    private final int attackRange;
     private final Map<ResourceType, Integer> productionCost;
 
     UnitType(
             String displayName,
             String mapSymbol,
             int productionTurns,
+            boolean military,
+            int maximumHitPoints,
+            int maximumActionPoints,
+            int attackRange,
             Map<ResourceType, Integer> productionCost
     ) {
         this.displayName = displayName;
         this.mapSymbol = mapSymbol;
         this.productionTurns = productionTurns;
+        this.military = military;
+        this.maximumHitPoints = maximumHitPoints;
+        this.maximumActionPoints = maximumActionPoints;
+        this.attackRange = attackRange;
         this.productionCost = productionCost;
     }
 
@@ -56,6 +84,22 @@ public enum UnitType {
 
     public Map<ResourceType, Integer> getProductionCost() {
         return productionCost;
+    }
+
+    public boolean isMilitary() {
+        return military;
+    }
+
+    public int getMaximumHitPoints() {
+        return maximumHitPoints;
+    }
+
+    public int getMaximumActionPoints() {
+        return maximumActionPoints;
+    }
+
+    public int getAttackRange() {
+        return attackRange;
     }
 
     @Override

@@ -9,6 +9,18 @@ import ir.ac.ap.civilization.model.game.ResourceBuildingService;
 import ir.ac.ap.civilization.model.game.SettlementConstructionService;
 import ir.ac.ap.civilization.model.game.TurnManager;
 import ir.ac.ap.civilization.model.game.UnitProductionService;
+import ir.ac.ap.civilization.model.game.CombatResult;
+import ir.ac.ap.civilization.model.game.CombatService;
+import ir.ac.ap.civilization.model.game.SpecialBuildingService;
+import ir.ac.ap.civilization.model.game.InfrastructureService;
+import ir.ac.ap.civilization.model.infrastructure.Wall;
+import ir.ac.ap.civilization.model.building.SpecialBuilding;
+import ir.ac.ap.civilization.model.building.SpecialBuildingType;
+import ir.ac.ap.civilization.model.trade.BazaarTradeLevel;
+import ir.ac.ap.civilization.model.trade.TradeResult;
+import ir.ac.ap.civilization.model.trade.TradeService;
+import ir.ac.ap.civilization.model.tribe.TribeService;
+import ir.ac.ap.civilization.model.resource.ResourceType;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.HexTile;
 import ir.ac.ap.civilization.model.technology.TechnologyType;
@@ -30,6 +42,11 @@ public final class GameController {
             settlementConstructionService;
     private final UnitProductionService unitProductionService;
     private final BorderExpansionService borderExpansionService;
+    private final CombatService combatService;
+    private final TradeService tradeService;
+    private final TribeService tribeService;
+    private final SpecialBuildingService specialBuildingService;
+    private final InfrastructureService infrastructureService;
 
     public GameController(GameState gameState) {
         this.gameState = Objects.requireNonNull(
@@ -53,6 +70,11 @@ public final class GameController {
 
         this.borderExpansionService =
                 new BorderExpansionService(gameState);
+        this.combatService = new CombatService(gameState);
+        this.tradeService = new TradeService(gameState);
+        this.tribeService = new TribeService(gameState);
+        this.specialBuildingService = new SpecialBuildingService(gameState);
+        this.infrastructureService = new InfrastructureService(gameState);
     }
 
     public GameState getGameState() {
@@ -184,5 +206,50 @@ public final class GameController {
                 unitId,
                 destination
         );
+    }
+
+    public CombatResult attack(
+            HexCoordinate attacker,
+            HexCoordinate defender
+    ) {
+        return combatService.attack(attacker, defender);
+    }
+
+    public TradeResult tradeAtBazaar(
+            ResourceType sold,
+            ResourceType received,
+            BazaarTradeLevel level
+    ) {
+        return tradeService.tradeAtBazaar(sold, received, level);
+    }
+
+    public TradeResult tradeAtPost(
+            ResourceType sold,
+            ResourceType received,
+            int amount
+    ) {
+        return tradeService.tradeAtPost(sold, received, amount);
+    }
+
+    public TribeService getTribeService() {
+        return tribeService;
+    }
+
+    public SpecialBuilding constructSpecialBuilding(
+            int builderId, SpecialBuildingType type
+    ) {
+        return specialBuildingService.construct(builderId, type);
+    }
+
+    public void buildRoad(int builderId) {
+        infrastructureService.buildRoad(builderId);
+    }
+
+    public Wall buildWall(int builderId, HexCoordinate otherSide) {
+        return infrastructureService.buildWall(builderId, otherSide);
+    }
+
+    public void demolishBuilding(int builderId, int buildingId) {
+        infrastructureService.demolishBuilding(builderId, buildingId);
     }
 }

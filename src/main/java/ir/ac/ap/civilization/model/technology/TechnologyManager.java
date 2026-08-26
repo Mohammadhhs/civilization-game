@@ -1,11 +1,13 @@
 package ir.ac.ap.civilization.model.technology;
 
+import java.io.Serializable;
+
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 
-public final class TechnologyManager {
+public final class TechnologyManager implements Serializable {
 
     public static final double NORMAL_MINING_MULTIPLIER = 1.0;
     public static final double PROFESSIONAL_TOOLS_MULTIPLIER = 1.5;
@@ -69,7 +71,8 @@ public final class TechnologyManager {
     }
 
     public double getMiningProductionMultiplier() {
-        if (isCompleted(TechnologyType.PROFESSIONAL_TOOLS)) {
+        if (isCompleted(TechnologyType.PROFESSIONAL_TOOLS) ||
+                isCompleted(TechnologyType.STEEL_TOOLS)) {
             return PROFESSIONAL_TOOLS_MULTIPLIER;
         }
 

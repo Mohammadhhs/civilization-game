@@ -1,6 +1,8 @@
 package ir.ac.ap.civilization.model.entity;
 
-public interface Damageable {
+import java.io.Serializable;
+
+public interface Damageable extends Serializable {
 
     int getCurrentHitPoints();
 

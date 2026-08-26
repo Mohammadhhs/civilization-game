@@ -111,6 +111,14 @@ public final class GameImageRepository {
                 ROOT + "units/civilian/explorer.png", classLoader);
         put(unitImages, UnitType.BORDER_EXPANDER,
                 ROOT + "units/civilian/border_expander.png", classLoader);
+        putOptional(unitImages, UnitType.SWORDSMAN,
+                ROOT + "units/military/swordsman.png", classLoader);
+        putOptional(unitImages, UnitType.ARCHER,
+                ROOT + "units/military/archer.png", classLoader);
+        putOptional(unitImages, UnitType.CAVALRY,
+                ROOT + "units/military/cavalry.png", classLoader);
+        putOptional(unitImages, UnitType.CATAPULT,
+                ROOT + "units/military/catapult.png", classLoader);
     }
 
     public BufferedImage getTerrainImage(TerrainType terrainType) {
@@ -175,6 +183,24 @@ public final class GameImageRepository {
             ClassLoader classLoader
     ) {
         target.put(key, load(path, classLoader));
+    }
+
+    private <T extends Enum<T>> void putOptional(
+            Map<T, BufferedImage> target,
+            T key,
+            String path,
+            ClassLoader classLoader
+    ) {
+        target.put(key, loadOptional(path, classLoader));
+    }
+
+    private BufferedImage loadOptional(String path, ClassLoader classLoader) {
+        String classPath = path.startsWith("/") ? path.substring(1) : path;
+        try (InputStream stream = classLoader.getResourceAsStream(classPath)) {
+            return stream == null ? null : ImageIO.read(stream);
+        } catch (IOException exception) {
+            return null;
+        }
     }
 
     private BufferedImage load(String path, ClassLoader classLoader) {

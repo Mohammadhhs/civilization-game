@@ -6,8 +6,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.io.Serializable;
 
-public final class HexTile {
+public final class HexTile implements Serializable {
 
     private static final int DEFAULT_DEPOSIT_AMOUNT = 100;
 

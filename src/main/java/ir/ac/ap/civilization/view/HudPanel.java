@@ -225,7 +225,10 @@ public final class HudPanel extends JPanel {
                         " | Border: " +
                         gameState.getActiveUnitCount(
                                 UnitType.BORDER_EXPANDER
-                        )
+                        ) +
+                        " | Military: " +
+                        gameState.getActiveMilitaryUnitCount() +
+                        "/" + gameState.getMilitaryUnitCap()
         );
 
         townHallLevelLabel.setText(
@@ -267,6 +270,14 @@ public final class HudPanel extends JPanel {
 
         refreshQueueInformation(townHall);
         refreshEconomyInformation(gameState);
+        crisisLabel.setText(
+                "Season: " + gameState.getPhaseTwoState().getSeason() +
+                        " | Happiness: " +
+                        gameState.getPhaseTwoState().getHappiness().getValue() +
+                        " (" +
+                        gameState.getPhaseTwoState().getHappiness().getLevel() +
+                        ")"
+        );
         refreshButtonStates(townHall);
 
         revalidate();

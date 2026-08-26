@@ -1,8 +1,10 @@
 package ir.ac.ap.civilization.model.map;
 
+import java.io.Serializable;
+
 import java.util.Objects;
 
-public final class NaturalResourceDeposit {
+public final class NaturalResourceDeposit implements Serializable {
 
     private final NaturalResourceType resourceType;
     private final int initialAmount;

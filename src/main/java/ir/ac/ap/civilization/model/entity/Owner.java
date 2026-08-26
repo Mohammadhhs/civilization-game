@@ -1,8 +1,9 @@
 package ir.ac.ap.civilization.model.entity;
 
 import java.util.Objects;
+import java.io.Serializable;
 
-public final class Owner {
+public final class Owner implements Serializable {
 
     public static final Owner PLAYER =
             new Owner(OwnerType.PLAYER, "player");

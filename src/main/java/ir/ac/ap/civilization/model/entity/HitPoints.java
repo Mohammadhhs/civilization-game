@@ -1,6 +1,8 @@
 package ir.ac.ap.civilization.model.entity;
 
-public final class HitPoints {
+import java.io.Serializable;
+
+public final class HitPoints implements Serializable {
 
     private int current;
     private int maximum;

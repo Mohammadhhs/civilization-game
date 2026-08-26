@@ -4,6 +4,8 @@ import ir.ac.ap.civilization.model.game.GameState;
 import ir.ac.ap.civilization.model.map.GameMap;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
 import ir.ac.ap.civilization.model.map.HexTile;
+import ir.ac.ap.civilization.model.map.TerrainType;
+import ir.ac.ap.civilization.model.technology.TechnologyType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,9 +52,9 @@ public final class UnitMovementService {
 
         return !isStationedWorker(unit) &&
                 unit.getPosition().isAdjacentTo(destination) &&
-                destinationTile.isNormallyPassable() &&
+                isPassableForUnit(destinationTile) &&
                 unit.canSpendActionPoints(
-                        destinationTile.getBaseMovementCost()
+                        calculateMovementCost(unit, destinationTile)
                 );
     }
 
@@ -72,9 +74,9 @@ public final class UnitMovementService {
         for (HexTile neighbor : gameMap.getValidNeighbors(
                 unit.getPosition()
         )) {
-            if (neighbor.isNormallyPassable() &&
+            if (isPassableForUnit(neighbor) &&
                     unit.canSpendActionPoints(
-                            neighbor.getBaseMovementCost()
+                            calculateMovementCost(unit, neighbor)
                     )) {
 
                 validDestinations.add(neighbor);
@@ -103,8 +105,7 @@ public final class UnitMovementService {
         validateAdjacency(unit, destination);
         validatePassableDestination(destinationTile);
 
-        int movementCost =
-                destinationTile.getBaseMovementCost();
+        int movementCost = calculateMovementCost(unit, destinationTile);
 
         validateActionPoints(unit, movementCost);
 
@@ -161,7 +162,7 @@ public final class UnitMovementService {
     private void validatePassableDestination(
             HexTile destinationTile
     ) {
-        if (!destinationTile.isNormallyPassable()) {
+        if (!isPassableForUnit(destinationTile)) {
             throw new IllegalStateException(
                     "The destination terrain is not passable"
             );
@@ -183,6 +184,36 @@ public final class UnitMovementService {
     private boolean isStationedWorker(Unit unit) {
         return unit instanceof Worker &&
                 ((Worker) unit).isStationed();
+    }
+
+    private int calculateMovementCost(Unit unit, HexTile destinationTile) {
+        if (destinationTile.getTerrainType() == TerrainType.SEA) {
+            return unit.getCurrentActionPoints();
+        }
+        int cost = gameState.getPhaseTwoState()
+                .getInfrastructure()
+                .movementCost(
+                        unit.getPosition(),
+                        destinationTile.getCoordinate(),
+                        destinationTile.getBaseMovementCost()
+                );
+        switch (gameState.getPhaseTwoState().getSeason()) {
+            case WINTER:
+                return cost + 1;
+            case AUTUMN:
+                return destinationTile.getTerrainType().name().equals("SEA")
+                        ? cost + 1 : cost;
+            default:
+                return cost;
+        }
+    }
+
+    private boolean isPassableForUnit(HexTile tile) {
+        return tile.isNormallyPassable() ||
+                tile.getTerrainType() == TerrainType.SEA &&
+                        gameState.getTownHall().hasTechnology(
+                                TechnologyType.NAVIGATION
+                        );
     }
 
     private void validateWorkerIsNotStationed(Unit unit) {

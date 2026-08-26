@@ -7,6 +7,10 @@ public enum TurnPhase {
     PRODUCTION_QUEUE,
     UNIT_DEPLOYMENT,
     ECONOMY,
+    TRIBE_BEHAVIOR,
+    HAPPINESS,
+    SEASON,
+    DISASTER,
     STORAGE_LIMIT,
     ADVANCE_TURN
 }

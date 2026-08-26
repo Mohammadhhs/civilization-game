@@ -50,6 +50,24 @@ public enum TechnologyType {
             4,
             createCost(0, 40, 40, 20),
             0
+    ),
+    NAVIGATION(
+            "Navigation",
+            1,
+            createCost(0, 60, 0, 0),
+            0
+    ),
+    STEEL_TOOLS(
+            "Steel Tools",
+            3,
+            createCost(0, 0, 0, 50),
+            0
+    ),
+    DEFENSIVE_ARCHITECTURE(
+            "Defensive Architecture",
+            5,
+            createCost(0, 0, 100, 0),
+            0
     );
 
     private final String displayName;
@@ -102,12 +120,27 @@ public enum TechnologyType {
             case STORAGE_UPGRADE_I:
             case STONE_MINING:
             case SETTLEMENT_CONSTRUCTION:
+            case NAVIGATION:
+            case STEEL_TOOLS:
+            case DEFENSIVE_ARCHITECTURE:
                 return Collections.emptySet();
 
             default:
                 throw new IllegalStateException(
                         "Unknown technology type"
                 );
+        }
+    }
+
+    public int getMinimumTownHallLevel() {
+        switch (this) {
+            case NAVIGATION:
+            case STEEL_TOOLS:
+                return 2;
+            case DEFENSIVE_ARCHITECTURE:
+                return 3;
+            default:
+                return 1;
         }
     }
 

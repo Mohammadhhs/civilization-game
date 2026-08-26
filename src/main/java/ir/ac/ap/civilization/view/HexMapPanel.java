@@ -3,6 +3,7 @@ package ir.ac.ap.civilization.view;
 import ir.ac.ap.civilization.controller.GameController;
 import ir.ac.ap.civilization.model.building.ResourceBuilding;
 import ir.ac.ap.civilization.model.building.Settlement;
+import ir.ac.ap.civilization.model.building.SpecialBuilding;
 import ir.ac.ap.civilization.model.game.GameState;
 import ir.ac.ap.civilization.model.map.GameMap;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
@@ -311,6 +312,7 @@ public final class HexMapPanel extends JPanel {
 
             drawResourceBuildings(graphics2D);
             drawSettlements(graphics2D);
+            drawSpecialBuildings(graphics2D);
             drawBorderExpansionPreviews(graphics2D);
             redrawDestinationOutlines(graphics2D);
             drawTerritoryBoundaries(graphics2D);
@@ -1228,6 +1230,14 @@ public final class HexMapPanel extends JPanel {
                 return new Color(151, 82, 184);
             case BORDER_EXPANDER:
                 return new Color(227, 176, 64);
+            case SWORDSMAN:
+                return new Color(190, 70, 70);
+            case ARCHER:
+                return new Color(70, 160, 90);
+            case CAVALRY:
+                return new Color(145, 95, 55);
+            case CATAPULT:
+                return new Color(90, 90, 100);
             default:
                 throw new IllegalStateException("Unknown unit type");
         }
@@ -1257,7 +1267,43 @@ public final class HexMapPanel extends JPanel {
     private boolean hasStructureAt(HexCoordinate coordinate) {
         return gameState.getResourceBuildingAt(coordinate)
                 .isPresent() ||
-                gameState.getSettlementAt(coordinate).isPresent();
+                gameState.getSettlementAt(coordinate).isPresent() ||
+                gameState.getSpecialBuildingAt(coordinate).isPresent();
+    }
+
+    private void drawSpecialBuildings(Graphics2D graphics2D) {
+        for (SpecialBuilding building : gameState.getSpecialBuildings()) {
+            HexTile tile = gameMap.getTile(building.getPosition()).orElse(null);
+            if (tile == null || !tile.isDiscovered()) {
+                continue;
+            }
+            Point center = getTileCenter(building.getPosition());
+            int size = (int) Math.round(getHexRadius() * 1.30);
+            graphics2D.setColor(new Color(
+                    232, 190, 88, tile.isVisible() ? 235 : 120
+            ));
+            graphics2D.fillRoundRect(
+                    center.x - size / 2,
+                    center.y - size / 2,
+                    size,
+                    size,
+                    18,
+                    18
+            );
+            graphics2D.setColor(Color.BLACK);
+            String symbol = building.getType().name().substring(0, 2);
+            graphics2D.setFont(new Font(
+                    Font.SANS_SERIF,
+                    Font.BOLD,
+                    Math.max(12, size / 5)
+            ));
+            int width = graphics2D.getFontMetrics().stringWidth(symbol);
+            graphics2D.drawString(
+                    symbol,
+                    center.x - width / 2,
+                    center.y + graphics2D.getFontMetrics().getAscent() / 2
+            );
+        }
     }
 
     private Polygon createHexPolygon(Point center) {

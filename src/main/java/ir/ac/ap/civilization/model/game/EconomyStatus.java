@@ -1,6 +1,8 @@
 package ir.ac.ap.civilization.model.game;
 
-public final class EconomyStatus {
+import java.io.Serializable;
+
+public final class EconomyStatus implements Serializable {
 
     private boolean starving;
     private int requiredUnitFood;

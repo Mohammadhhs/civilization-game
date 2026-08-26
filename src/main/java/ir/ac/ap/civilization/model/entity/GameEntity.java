@@ -1,6 +1,8 @@
 package ir.ac.ap.civilization.model.entity;
 
-public interface GameEntity {
+import java.io.Serializable;
+
+public interface GameEntity extends Serializable {
 
     int getId();
 

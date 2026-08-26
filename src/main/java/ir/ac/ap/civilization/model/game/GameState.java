@@ -5,9 +5,12 @@ import ir.ac.ap.civilization.model.building.BuildingType;
 import ir.ac.ap.civilization.model.building.ResourceBuilding;
 import ir.ac.ap.civilization.model.building.MaintainedBuilding;
 import ir.ac.ap.civilization.model.building.Settlement;
+import ir.ac.ap.civilization.model.building.SpecialBuilding;
+import ir.ac.ap.civilization.model.building.SpecialBuildingType;
 import ir.ac.ap.civilization.model.entity.EntityKey;
 import ir.ac.ap.civilization.model.entity.EntityKind;
 import ir.ac.ap.civilization.model.entity.GameEntity;
+import ir.ac.ap.civilization.model.entity.Owner;
 import ir.ac.ap.civilization.model.map.FogOfWarService;
 import ir.ac.ap.civilization.model.map.GameMap;
 import ir.ac.ap.civilization.model.map.HexCoordinate;
@@ -19,6 +22,10 @@ import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.resource.ResourceType;
 import ir.ac.ap.civilization.model.random.DeterministicRandomSource;
 import ir.ac.ap.civilization.model.random.RandomSource;
+import ir.ac.ap.civilization.model.phase2.PhaseTwoState;
+import ir.ac.ap.civilization.model.tribe.Tribe;
+import ir.ac.ap.civilization.model.tribe.TribeRelationState;
+import ir.ac.ap.civilization.model.tribe.TribeType;
 import ir.ac.ap.civilization.model.unit.Builder;
 import ir.ac.ap.civilization.model.unit.Explorer;
 import ir.ac.ap.civilization.model.unit.Unit;
@@ -29,10 +36,16 @@ import ir.ac.ap.civilization.model.unit.Worker;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.io.Serializable;
+import java.util.UUID;
 
-public final class GameState {
+public final class GameState implements Serializable {
+
+    private static final long serialVersionUID = 2L;
 
     private static final int STARTING_FOOD = 60;
     private static final int STARTING_WOOD = 80;
@@ -45,11 +58,16 @@ public final class GameState {
             new HexCoordinate(0, 0);
 
     private final TownHall townHall;
+    private final String gameId;
     private final GameMap gameMap;
     private final PlayerTerritory playerTerritory;
     private final List<Unit> units;
     private final List<ResourceBuilding> resourceBuildings;
     private final List<Settlement> settlements;
+    private final List<SpecialBuilding> specialBuildings;
+    private final Map<String, Integer> lastTradeTurns;
+    private final List<Tribe> tribes;
+    private final PhaseTwoState phaseTwoState;
     private final FogOfWarService fogOfWarService;
     private final UnitFactory unitFactory;
     private final EconomyStatus economyStatus;
@@ -73,6 +91,7 @@ public final class GameState {
         this.nextUnitId = 1;
         this.nextBuildingId = 1;
         this.townHall = new TownHall();
+        this.gameId = UUID.randomUUID().toString();
         this.gameMap = Objects.requireNonNull(
                 gameMap,
                 "Game map cannot be null"
@@ -81,6 +100,10 @@ public final class GameState {
         this.units = new ArrayList<>();
         this.resourceBuildings = new ArrayList<>();
         this.settlements = new ArrayList<>();
+        this.specialBuildings = new ArrayList<>();
+        this.lastTradeTurns = new LinkedHashMap<>();
+        this.tribes = new ArrayList<>();
+        this.phaseTwoState = new PhaseTwoState();
         this.fogOfWarService = new FogOfWarService();
         this.unitFactory = new UnitFactory();
         this.economyStatus = new EconomyStatus();
@@ -92,11 +115,16 @@ public final class GameState {
         initializeStartingResources();
         initializeStartingTerritory();
         initializeStartingUnits();
+        initializeTribes();
         refreshVisibility();
     }
 
     public int getTurnNumber() {
         return turnNumber;
+    }
+
+    public String getGameId() {
+        return gameId;
     }
 
     public TownHall getTownHall() {
@@ -117,6 +145,31 @@ public final class GameState {
 
     public EconomyStatus getEconomyStatus() {
         return economyStatus;
+    }
+
+    public PhaseTwoState getPhaseTwoState() {
+        return phaseTwoState;
+    }
+
+    public List<Tribe> getTribes() {
+        return Collections.unmodifiableList(tribes);
+    }
+
+    public Optional<Tribe> getTribeById(int tribeId) {
+        for (Tribe tribe : tribes) {
+            if (tribe.getId() == tribeId) return Optional.of(tribe);
+        }
+        return Optional.empty();
+    }
+
+    public boolean hasAlliedTribe(TribeType type) {
+        for (Tribe tribe : tribes) {
+            if (tribe.getType() == type &&
+                    tribe.getRelationState() == TribeRelationState.ALLIED) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public RandomSource getRandomSource() {
@@ -143,6 +196,21 @@ public final class GameState {
         return Collections.unmodifiableList(settlements);
     }
 
+    public List<SpecialBuilding> getSpecialBuildings() {
+        return Collections.unmodifiableList(specialBuildings);
+    }
+
+    public boolean wasTradeUsedThisTurn(String sourceKey) {
+        return Integer.valueOf(turnNumber).equals(
+                lastTradeTurns.get(sourceKey)
+        );
+    }
+
+    public void recordTrade(String sourceKey) {
+        Objects.requireNonNull(sourceKey, "Trade source cannot be null");
+        lastTradeTurns.put(sourceKey, turnNumber);
+    }
+
     public int getActiveUnitCount() {
         return units.size();
     }
@@ -162,6 +230,45 @@ public final class GameState {
         }
 
         return count;
+    }
+
+    public int getActiveMilitaryUnitCount() {
+        int count = 0;
+        for (Unit unit : units) {
+            if (unit.getUnitType().isMilitary()) {
+                count = Math.incrementExact(count);
+            }
+        }
+        return count;
+    }
+
+    public int getMilitaryUnitCap() {
+        switch (townHall.getCurrentLevel()) {
+            case BASE_CAMP:
+                return 5;
+            case SETTLEMENT:
+                return 10;
+            case CAPITAL:
+                return 15;
+            default:
+                throw new IllegalStateException("Unknown Town Hall level");
+        }
+    }
+
+    public boolean canCreateUnit(UnitType unitType) {
+        Objects.requireNonNull(unitType, "Unit type cannot be null");
+        return canCreateUnit() &&
+                (!unitType.isMilitary() ||
+                        getActiveMilitaryUnitCount() < getMilitaryUnitCap());
+    }
+
+    public boolean hasBuildingType(BuildingType buildingType) {
+        for (ResourceBuilding building : resourceBuildings) {
+            if (building.getBuildingType() == buildingType) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public List<Unit> getIdleUnits() {
@@ -241,6 +348,12 @@ public final class GameState {
             }
         }
 
+        for (SpecialBuilding building : specialBuildings) {
+            if (building.getId() == buildingId) {
+                return Optional.<MaintainedBuilding>of(building);
+            }
+        }
+
         return Optional.empty();
     }
 
@@ -310,6 +423,41 @@ public final class GameState {
         return Optional.empty();
     }
 
+    public Optional<SpecialBuilding> getSpecialBuildingAt(
+            HexCoordinate coordinate
+    ) {
+        Objects.requireNonNull(coordinate, "Coordinate cannot be null");
+        for (SpecialBuilding building : specialBuildings) {
+            if (building.getPosition().equals(coordinate)) {
+                return Optional.of(building);
+            }
+        }
+        return Optional.empty();
+    }
+
+    public SpecialBuilding addSpecialBuilding(
+            SpecialBuildingType type,
+            HexCoordinate position,
+            Owner owner
+    ) {
+        Objects.requireNonNull(type, "Building type cannot be null");
+        Objects.requireNonNull(position, "Position cannot be null");
+        if (getResourceBuildingAt(position).isPresent() ||
+                getSettlementAt(position).isPresent() ||
+                getSpecialBuildingAt(position).isPresent()) {
+            throw new IllegalStateException("A building already exists on this hex");
+        }
+        if (!gameMap.containsCoordinate(position)) {
+            throw new IllegalArgumentException("Building is outside the map");
+        }
+        SpecialBuilding building = new SpecialBuilding(
+                createNextBuildingId(), type, position, owner
+        );
+        specialBuildings.add(building);
+        refreshVisibility();
+        return building;
+    }
+
     public Optional<Unit> getUnitById(int unitId) {
         for (Unit unit : units) {
             if (unit.getId() == unitId) {
@@ -346,6 +494,14 @@ public final class GameState {
                 units,
                 getMaintainedBuildings()
         );
+        for (Tribe tribe : tribes) {
+            HexTile campTile = gameMap.getTile(
+                    tribe.getCampPosition()
+            ).orElse(null);
+            if (campTile != null && campTile.isDiscovered()) {
+                tribe.discover();
+            }
+        }
     }
 
     void incrementTurnNumber() {
@@ -458,6 +614,20 @@ public final class GameState {
         }
     }
 
+    void addUnit(Unit unit) {
+        Objects.requireNonNull(unit, "Unit cannot be null");
+        if (getUnitById(unit.getId()).isPresent()) {
+            throw new IllegalArgumentException("Duplicate unit id");
+        }
+        units.add(unit);
+        nextUnitId = Math.max(nextUnitId, unit.getId() + 1);
+        refreshVisibility();
+    }
+
+    int reserveUnitId() {
+        return createNextUnitId();
+    }
+
     void removeResourceBuilding(
             ResourceBuilding building
     ) {
@@ -517,6 +687,15 @@ public final class GameState {
             return;
         }
 
+        if (building instanceof SpecialBuilding) {
+            if (!specialBuildings.remove(building)) {
+                throw new IllegalStateException(
+                        "Special building does not belong to this game"
+                );
+            }
+            return;
+        }
+
         throw new IllegalArgumentException(
                 "Unknown maintained building type"
         );
@@ -528,6 +707,7 @@ public final class GameState {
 
         buildings.addAll(resourceBuildings);
         buildings.addAll(settlements);
+        buildings.addAll(specialBuildings);
 
         Collections.sort(
                 buildings,
@@ -595,6 +775,32 @@ public final class GameState {
                         startingPositions.get(4)
                 )
         );
+    }
+
+    private void initializeTribes() {
+        TribeType[] types = {
+                TribeType.FARMER,
+                TribeType.MOUNTAIN,
+                TribeType.MERCHANT,
+                TribeType.COASTAL,
+                TribeType.WARRIOR
+        };
+        int created = 0;
+        for (HexTile tile : gameMap.getTiles()) {
+            HexCoordinate coordinate = tile.getCoordinate();
+            if (created >= types.length) break;
+            if (TOWN_HALL_COORDINATE.distanceTo(coordinate) < 4 ||
+                    !tile.isNormallyPassable()) {
+                continue;
+            }
+            tribes.add(new Tribe(
+                    created + 1,
+                    types[created].name() + " Tribe",
+                    types[created],
+                    coordinate
+            ));
+            created++;
+        }
     }
 
     private void addStartingUnit(Unit unit) {

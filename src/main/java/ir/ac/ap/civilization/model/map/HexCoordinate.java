@@ -1,11 +1,13 @@
 package ir.ac.ap.civilization.model.map;
 
+import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public final class HexCoordinate {
+public final class HexCoordinate implements Serializable {
 
     private static final int[][] DIRECTIONS = {
             {1, 0},

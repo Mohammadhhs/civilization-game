@@ -3,6 +3,9 @@ package ir.ac.ap.civilization.model.game;
 import ir.ac.ap.civilization.model.building.TownHall;
 import ir.ac.ap.civilization.model.resource.ResourceStockpile;
 import ir.ac.ap.civilization.model.production.ProductionCommand;
+import ir.ac.ap.civilization.model.building.SpecialBuilding;
+import ir.ac.ap.civilization.model.building.SpecialBuildingType;
+import ir.ac.ap.civilization.model.tribe.TribeService;
 
 import java.util.Objects;
 import java.util.ArrayList;
@@ -17,6 +20,8 @@ public final class TurnManager {
     private final EconomyService economyService;
     private final UnitProductionService unitProductionService;
     private final List<TurnPhase> lastCompletedPhases;
+    private final TribeService tribeService;
+    private final DisasterService disasterService;
 
     public TurnManager(GameState gameState) {
         this.gameState = Objects.requireNonNull(
@@ -34,6 +39,8 @@ public final class TurnManager {
                 new UnitProductionService(gameState);
 
         this.lastCompletedPhases = new ArrayList<>();
+        this.tribeService = new TribeService(gameState);
+        this.disasterService = new DisasterService(gameState);
     }
 
     public List<TurnPhase> getLastCompletedPhases() {
@@ -74,6 +81,18 @@ public final class TurnManager {
             economyService.applyEndTurnCosts();
             complete(TurnPhase.ECONOMY);
 
+            tribeService.advanceTurn();
+            complete(TurnPhase.TRIBE_BEHAVIOR);
+
+            updateHappiness();
+            complete(TurnPhase.HAPPINESS);
+
+            gameState.getPhaseTwoState().advanceSeason();
+            complete(TurnPhase.SEASON);
+
+            disasterService.rollEndTurnDisaster();
+            complete(TurnPhase.DISASTER);
+
             stockpile.applyCapacityLimit();
             complete(TurnPhase.STORAGE_LIMIT);
 
@@ -92,5 +111,22 @@ public final class TurnManager {
 
     private void complete(TurnPhase phase) {
         lastCompletedPhases.add(phase);
+    }
+
+    private void updateHappiness() {
+        int monumentBonus = 0;
+        for (SpecialBuilding building : gameState.getSpecialBuildings()) {
+            if (building.getType() == SpecialBuildingType.MONUMENT &&
+                    !building.isDestroyed()) {
+                monumentBonus += 2;
+            }
+        }
+        if (monumentBonus > 0) {
+            gameState.getPhaseTwoState().getHappiness().change(monumentBonus);
+        }
+        if (gameState.getActiveMilitaryUnitCount() >=
+                gameState.getMilitaryUnitCap()) {
+            gameState.getPhaseTwoState().getHappiness().change(-1);
+        }
     }
 }

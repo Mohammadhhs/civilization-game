@@ -2,12 +2,19 @@ package ir.ac.ap.civilization.view;
 
 import ir.ac.ap.civilization.controller.GameController;
 import ir.ac.ap.civilization.model.game.GameState;
+import ir.ac.ap.civilization.model.game.GameSaveService;
+import ir.ac.ap.civilization.model.game.SaveSlot;
 import ir.ac.ap.civilization.view.asset.GameImageRepository;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.Objects;
@@ -24,6 +31,7 @@ public final class GameFrame extends JFrame {
     private final TechnologyPanel technologyPanel;
     private final BuildingActionsPanel buildingActionsPanel;
     private final UnitProductionPanel unitProductionPanel;
+    private final GameSaveService saveService;
 
     public GameFrame(GameController controller) {
         super("Civilization - Advanced Programming Project");
@@ -42,8 +50,13 @@ public final class GameFrame extends JFrame {
                 new BuildingActionsPanel(controller, imageRepository);
         this.unitProductionPanel =
                 new UnitProductionPanel(controller, imageRepository);
+        this.saveService = new GameSaveService(
+                Paths.get(System.getProperty("user.home"),
+                        ".civilization", "saves")
+        );
 
         configureFrame();
+        setJMenuBar(createMenuBar());
         arrangeComponents();
         connectViewActions();
         refreshView();
@@ -246,10 +259,73 @@ public final class GameFrame extends JFrame {
         executeAction(
                 () -> {
                     controller.endTurn();
+                    try {
+                        saveService.save(
+                                controller.getGameState(),
+                                SaveSlot.AUTOSAVE,
+                                "Autosave"
+                        );
+                    } catch (IOException exception) {
+                        hudPanel.setStatusMessage(
+                                "Autosave failed: " + exception.getMessage(),
+                                true
+                        );
+                    }
                     hexMapPanel.refreshFromModel();
                 },
                 "Turn completed and economy updated"
         );
+    }
+
+    private JMenuBar createMenuBar() {
+        JMenuBar bar = new JMenuBar();
+        JMenu game = new JMenu("Game");
+        JMenu save = new JMenu("Save");
+        JMenu load = new JMenu("Load");
+        for (SaveSlot slot : SaveSlot.values()) {
+            if (slot != SaveSlot.AUTOSAVE) {
+                JMenuItem saveItem = new JMenuItem(slot.name());
+                saveItem.addActionListener(event -> save(slot));
+                save.add(saveItem);
+            }
+            JMenuItem loadItem = new JMenuItem(slot.name());
+            loadItem.addActionListener(event -> load(slot));
+            load.add(loadItem);
+        }
+        JMenuItem phaseTwo = new JMenuItem("Phase II Command Center");
+        phaseTwo.addActionListener(event ->
+                new PhaseTwoDialog(this, controller).setVisible(true));
+        game.add(save);
+        game.add(load);
+        game.addSeparator();
+        game.add(phaseTwo);
+        bar.add(game);
+        return bar;
+    }
+
+    private void save(SaveSlot slot) {
+        try {
+            saveService.save(controller.getGameState(), slot, slot.name());
+            hudPanel.setStatusMessage("Saved to " + slot, false);
+        } catch (IOException | RuntimeException exception) {
+            JOptionPane.showMessageDialog(this, exception.getMessage(),
+                    "Save failed", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void load(SaveSlot slot) {
+        if (JOptionPane.showConfirmDialog(this,
+                "Unsaved progress will be lost. Continue?", "Load game",
+                JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
+        try {
+            GameState loaded = saveService.load(slot);
+            GameFrame frame = new GameFrame(new GameController(loaded));
+            frame.setVisible(true);
+            dispose();
+        } catch (IOException exception) {
+            JOptionPane.showMessageDialog(this, exception.getMessage(),
+                    "Load failed", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void refreshView() {

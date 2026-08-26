@@ -8,8 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.io.Serializable;
 
-public final class GameMap {
+public final class GameMap implements Serializable {
 
     private static final HexCoordinate CENTER =
             new HexCoordinate(0, 0);

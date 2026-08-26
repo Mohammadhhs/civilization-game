@@ -1,11 +1,13 @@
 package ir.ac.ap.civilization.model.map;
 
+import java.io.Serializable;
+
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public final class PlayerTerritory {
+public final class PlayerTerritory implements Serializable {
 
     private final GameMap gameMap;
     private final Set<HexCoordinate> ownedCoordinates;

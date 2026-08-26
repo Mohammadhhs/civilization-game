@@ -27,7 +27,8 @@ public final class UnitProductionService {
 
         TownHall townHall = gameState.getTownHall();
 
-        return gameState.canCreateUnit() &&
+        return gameState.canCreateUnit(unitType) &&
+                isUnlocked(unitType) &&
                 townHall.canStartUnitProduction(unitType);
     }
 
@@ -37,9 +38,15 @@ public final class UnitProductionService {
                 "Unit type cannot be null"
         );
 
-        if (!gameState.canCreateUnit()) {
+        if (!gameState.canCreateUnit(unitType)) {
             throw new IllegalStateException(
                     "Unit cap has been reached"
+            );
+        }
+
+        if (!isUnlocked(unitType)) {
+            throw new IllegalStateException(
+                    unitType.getDisplayName() + " is not unlocked"
             );
         }
 
@@ -57,12 +64,31 @@ public final class UnitProductionService {
         UnitProductionCommand unitCommand =
                 (UnitProductionCommand) completedCommand;
 
-        if (!gameState.canCreateUnit()) {
+        if (!gameState.canCreateUnit(unitCommand.getUnitType())) {
             return null;
         }
 
         return gameState.deployUnit(
                 unitCommand.getUnitType()
         );
+    }
+
+    private boolean isUnlocked(UnitType unitType) {
+        int level = gameState.getTownHall()
+                .getCurrentLevel().getLevelNumber();
+
+        switch (unitType) {
+            case ARCHER:
+                return level >= 2;
+            case CAVALRY:
+                return level >= 2 &&
+                        gameState.hasBuildingType(
+                                ir.ac.ap.civilization.model.building.BuildingType.STABLE
+                        );
+            case CATAPULT:
+                return level >= 3;
+            default:
+                return true;
+        }
     }
 }

@@ -4,8 +4,9 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
+import java.io.Serializable;
 
-public final class ResourceStockpile {
+public final class ResourceStockpile implements Serializable {
 
     private final EnumMap<ResourceType, Integer> amounts;
     private int capacityPerResource;

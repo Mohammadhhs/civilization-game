@@ -215,6 +215,21 @@ public final class ResourceBuildingService {
             );
         }
 
+        requestedProduction = (int) Math.floor(
+                requestedProduction * gameState.getPhaseTwoState()
+                        .getHappiness().getProductionMultiplier()
+        );
+
+        if (building.getBuildingType() == BuildingType.FARM &&
+                gameState.getPhaseTwoState().getSeason().name()
+                        .equals("SUMMER")) {
+            requestedProduction = (int) Math.floor(
+                    requestedProduction * 1.25
+            );
+        }
+
+        requestedProduction += calculateAdjacencyBonus(building);
+
         int extractedAmount = tile.extractNaturalResource(
                 naturalResourceType,
                 requestedProduction
@@ -235,6 +250,18 @@ public final class ResourceBuildingService {
         }
 
         return extractedAmount;
+    }
+
+    private int calculateAdjacencyBonus(ResourceBuilding building) {
+        int bonus = 0;
+        for (ResourceBuilding other : gameState.getResourceBuildings()) {
+            if (other == building) continue;
+            if (other.getBuildingType() == building.getBuildingType() &&
+                    other.getPosition().isAdjacentTo(building.getPosition())) {
+                bonus++;
+            }
+        }
+        return bonus;
     }
 
     private ConstructionContext validateConstruction(

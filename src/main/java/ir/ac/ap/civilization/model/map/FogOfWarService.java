@@ -1,5 +1,7 @@
 package ir.ac.ap.civilization.model.map;
 
+import java.io.Serializable;
+
 import ir.ac.ap.civilization.model.building.MaintainedBuilding;
 import ir.ac.ap.civilization.model.unit.Unit;
 
@@ -7,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public final class FogOfWarService {
+public final class FogOfWarService implements Serializable {
 
     public static final int TOWN_HALL_VISION_RADIUS = 2;
 

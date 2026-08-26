@@ -3,6 +3,8 @@ package ir.ac.ap.civilization.view;
 import ir.ac.ap.civilization.audio.BackgroundMusicPlayer;
 import ir.ac.ap.civilization.controller.GameController;
 import ir.ac.ap.civilization.model.game.GameState;
+import ir.ac.ap.civilization.model.game.GameSaveService;
+import ir.ac.ap.civilization.model.game.SaveSlot;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -18,6 +20,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.util.Objects;
+import java.io.IOException;
+import java.nio.file.Paths;
 
 public final class MainMenuFrame extends JFrame {
 
@@ -88,12 +92,17 @@ public final class MainMenuFrame extends JFrame {
                 "Settings",
                 new Color(70, 145, 205)
         );
+        JButton loadButton = createButton(
+                "Load Game",
+                new Color(227, 176, 64)
+        );
         JButton exitButton = createButton(
                 "Exit",
                 new Color(176, 65, 62)
         );
 
         startButton.addActionListener(event -> startGame());
+        loadButton.addActionListener(event -> loadGame());
         settingsButton.addActionListener(
                 event -> new SettingsDialog(
                         this,
@@ -107,6 +116,8 @@ public final class MainMenuFrame extends JFrame {
         panel.add(subtitle);
         panel.add(Box.createVerticalGlue());
         panel.add(startButton);
+        panel.add(Box.createVerticalStrut(14));
+        panel.add(loadButton);
         panel.add(Box.createVerticalStrut(14));
         panel.add(settingsButton);
         panel.add(Box.createVerticalStrut(14));
@@ -148,6 +159,27 @@ public final class MainMenuFrame extends JFrame {
         GameFrame gameFrame = new GameFrame(controller);
         gameFrame.setVisible(true);
         dispose();
+    }
+
+    private void loadGame() {
+        SaveSlot slot = (SaveSlot) JOptionPane.showInputDialog(
+                this, "Choose save slot", "Load Game",
+                JOptionPane.PLAIN_MESSAGE, null,
+                SaveSlot.values(), SaveSlot.AUTOSAVE
+        );
+        if (slot == null) return;
+        GameSaveService saves = new GameSaveService(
+                Paths.get(System.getProperty("user.home"),
+                        ".civilization", "saves")
+        );
+        try {
+            GameState loaded = saves.load(slot);
+            new GameFrame(new GameController(loaded)).setVisible(true);
+            dispose();
+        } catch (IOException exception) {
+            JOptionPane.showMessageDialog(this, exception.getMessage(),
+                    "Load failed", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void requestExit() {
