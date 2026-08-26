@@ -161,6 +161,7 @@ public final class TechnologyPanel extends JPanel {
         JButton researchButton = new JButton(
                 technologyType.getDisplayName()
         );
+        researchButton.setForeground(Color.BLACK);
         researchButton.setAlignmentX(LEFT_ALIGNMENT);
         researchButton.setMaximumSize(
                 new Dimension(Integer.MAX_VALUE, 32)

@@ -138,6 +138,11 @@ public final class GameController {
         return borderExpansionService.canExpand(unitId);
     }
 
+    public String getBorderExpansionProblem(int unitId) {
+        return borderExpansionService
+                .getExpansionProblem(unitId);
+    }
+
     public int expandBorder(int unitId) {
         return borderExpansionService.expand(unitId);
     }

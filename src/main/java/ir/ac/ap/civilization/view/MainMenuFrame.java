@@ -123,7 +123,7 @@ public final class MainMenuFrame extends JFrame {
         button.setAlignmentX(0.5f);
         button.setMaximumSize(new Dimension(320, 52));
         button.setPreferredSize(new Dimension(320, 52));
-        button.setForeground(Color.WHITE);
+        button.setForeground(Color.BLACK);
         button.setBackground(color);
         button.setFocusPainted(false);
         button.setFont(

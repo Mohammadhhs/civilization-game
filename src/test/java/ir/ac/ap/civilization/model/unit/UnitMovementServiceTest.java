@@ -66,6 +66,42 @@ class UnitMovementServiceTest {
     }
 
     @Test
+    void severalUnitsMayShareTheSameDestinationHex() {
+        GameState gameState = new GameState();
+        UnitMovementService movementService =
+                new UnitMovementService(gameState);
+
+        Unit firstBuilder = gameState.getUnitById(1)
+                .orElseThrow(AssertionError::new);
+        Unit secondBuilder = gameState.getUnitById(2)
+                .orElseThrow(AssertionError::new);
+        HexCoordinate destination =
+                gameState.getTownHallCoordinate();
+
+        movementService.moveUnit(
+                firstBuilder.getId(),
+                destination
+        );
+        movementService.moveUnit(
+                secondBuilder.getId(),
+                destination
+        );
+
+        assertEquals(
+                2,
+                gameState.getUnitsAt(destination).size()
+        );
+        assertTrue(
+                gameState.getUnitsAt(destination)
+                        .contains(firstBuilder)
+        );
+        assertTrue(
+                gameState.getUnitsAt(destination)
+                        .contains(secondBuilder)
+        );
+    }
+
+    @Test
     void nonAdjacentMovementIsRejectedAtomically() {
         GameState gameState = new GameState();
         UnitMovementService movementService =

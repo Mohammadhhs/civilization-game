@@ -53,9 +53,10 @@ public final class GameFrame extends JFrame {
     private void configureFrame() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        setMinimumSize(new Dimension(1366, 768));
-        setSize(1500, 900);
+        setMinimumSize(new Dimension(1280, 800));
+        setSize(1600, 1000);
         setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
     }
 
     private void arrangeComponents() {
@@ -64,7 +65,7 @@ public final class GameFrame extends JFrame {
 
         informationScrollPane.setBorder(null);
         informationScrollPane.setPreferredSize(
-                new Dimension(315, 0)
+                new Dimension(295, 0)
         );
         informationScrollPane.setHorizontalScrollBarPolicy(
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER

@@ -44,6 +44,10 @@ class BorderExpansionServiceTest {
         assertTrue(gameState.getPlayerTerritory().contains(
                 new HexCoordinate(4, 0)
         ));
+        assertTrue(gameState.getGameMap().getTile(
+                new HexCoordinate(4, 0)
+        ).orElseThrow(AssertionError::new)
+                .isInsidePlayerTerritory());
     }
 
     @Test

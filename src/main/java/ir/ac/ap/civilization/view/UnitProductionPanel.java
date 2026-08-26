@@ -91,7 +91,7 @@ public final class UnitProductionPanel extends JPanel {
         );
 
         trainButton = new JButton("Start Production");
-        trainButton.setForeground(Color.WHITE);
+        trainButton.setForeground(Color.BLACK);
         trainButton.setBackground(ACCENT_COLOR);
         trainButton.setFocusPainted(false);
 

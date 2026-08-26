@@ -30,13 +30,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -65,6 +65,10 @@ public final class HexMapPanel extends JPanel {
             new Color(255, 196, 76, 28);
     private static final Color TERRITORY_BORDER_COLOR =
             new Color(255, 196, 76, 225);
+    private static final Color EXPANSION_AVAILABLE_COLOR =
+            new Color(82, 214, 126, 92);
+    private static final Color EXPANSION_BLOCKED_COLOR =
+            new Color(235, 143, 52, 78);
     private static final Color DEPLETED_RESOURCE_COLOR =
             new Color(75, 78, 83);
     private static final Color BUILDING_COLOR =
@@ -82,15 +86,21 @@ public final class HexMapPanel extends JPanel {
     };
 
     private static final double SQRT_THREE = Math.sqrt(3.0);
-    private static final double BASE_HEX_SIZE = 40.0;
+    /*
+     * The previous map used a 40 px base side. 120 px is deliberately
+     * three times larger; the default zoom stays at 0.75 (90 px on screen).
+     */
+    private static final double BASE_HEX_SIZE = 120.0;
 
     private static final double[] ZOOM_LEVELS = {
+            0.25,
+            0.40,
+            0.55,
             0.75,
-            0.90,
-            1.10,
-            1.35,
-            1.65
+            0.95,
+            1.20
     };
+    private static final int DEFAULT_ZOOM_INDEX = 3;
 
     private static final int ANIMATION_DELAY_MS = 16;
     private static final int ANIMATION_DURATION_MS = 320;
@@ -149,7 +159,7 @@ public final class HexMapPanel extends JPanel {
         this.statusListener = (message, error) -> {
         };
 
-        this.zoomIndex = 0;
+        this.zoomIndex = DEFAULT_ZOOM_INDEX;
         this.movingUnitId = -1;
 
         this.selectedTile = gameMap
@@ -196,7 +206,7 @@ public final class HexMapPanel extends JPanel {
     }
 
     public void resetCamera() {
-        zoomIndex = 0;
+        zoomIndex = DEFAULT_ZOOM_INDEX;
         panX = 0.0;
         panY = 0.0;
         repaint();
@@ -301,6 +311,10 @@ public final class HexMapPanel extends JPanel {
 
             drawResourceBuildings(graphics2D);
             drawSettlements(graphics2D);
+            drawBorderExpansionPreviews(graphics2D);
+            redrawDestinationOutlines(graphics2D);
+            drawTerritoryBoundaries(graphics2D);
+            redrawSelectionOutline(graphics2D);
             drawUnits(graphics2D);
             drawMovingUnit(graphics2D);
         } finally {
@@ -310,14 +324,15 @@ public final class HexMapPanel extends JPanel {
 
     private void configurePanel() {
         setBackground(BACKGROUND_COLOR);
-        setPreferredSize(new Dimension(800, 500));
+        setPreferredSize(new Dimension(1280, 800));
         setBorder(
                 BorderFactory.createLineBorder(
                         new Color(55, 64, 75)
                 )
         );
         setToolTipText(
-                "Left click: select or move | " +
+                        "Click a unit sprite to select it; " +
+                        "click free hex space to move | " +
                         "Right/middle drag: pan | Wheel: zoom"
         );
         setCursor(
@@ -385,10 +400,9 @@ public final class HexMapPanel extends JPanel {
         drawGrid(graphics2D, polygon);
 
         drawTerritoryTint(graphics2D, tile, polygon);
-
         if (tile.getCoordinate().equals(townHallCoordinate)) {
             drawTownHall(graphics2D, center);
-        } else {
+        } else if (!hasStructureAt(tile.getCoordinate())) {
             drawNaturalResources(
                     graphics2D,
                     tile,
@@ -400,8 +414,6 @@ public final class HexMapPanel extends JPanel {
             graphics2D.setColor(EXPLORED_OVERLAY);
             graphics2D.fillPolygon(polygon);
         }
-
-        drawTerritoryBoundary(graphics2D, tile, polygon);
 
         if (validDestinations.contains(tile.getCoordinate())) {
             graphics2D.setColor(
@@ -519,6 +531,39 @@ public final class HexMapPanel extends JPanel {
         graphics2D.setComposite(previousComposite);
     }
 
+    private void drawStructureSprite(
+            Graphics2D graphics2D,
+            BufferedImage image,
+            HexCoordinate coordinate,
+            Point center,
+            int maximumWidth,
+            int maximumHeight,
+            boolean dimmed
+    ) {
+        Polygon polygon = createHexPolygon(
+                getTileCenter(coordinate)
+        );
+        Shape previousClip = graphics2D.getClip();
+        graphics2D.clip(polygon);
+
+        /*
+         * A completed building owns the visual layer of its whole hex.
+         * The backdrop prevents terrain/resource artwork from reading
+         * through transparent parts of the building sprite.
+         */
+        graphics2D.setColor(new Color(17, 22, 28, 172));
+        graphics2D.fillPolygon(polygon);
+        drawSprite(
+                graphics2D,
+                image,
+                center,
+                maximumWidth,
+                maximumHeight,
+                dimmed
+        );
+        graphics2D.setClip(previousClip);
+    }
+
     private void drawWarningRing(
             Graphics2D graphics2D,
             Point center,
@@ -584,7 +629,9 @@ public final class HexMapPanel extends JPanel {
             HexTile tile,
             Polygon polygon
     ) {
-        if (!tile.isInsidePlayerTerritory()) {
+        if (!gameState.getPlayerTerritory().contains(
+                tile.getCoordinate()
+        )) {
             return;
         }
 
@@ -592,12 +639,63 @@ public final class HexMapPanel extends JPanel {
         graphics2D.fillPolygon(polygon);
     }
 
+    private void drawBorderExpansionPreview(
+            Graphics2D graphics2D,
+            HexTile tile,
+            Polygon polygon
+    ) {
+        if (selectedUnit == null ||
+                selectedUnit.getUnitType() !=
+                        UnitType.BORDER_EXPANDER ||
+                !selectedUnit.getPosition()
+                        .getCoordinatesWithinRadius(1)
+                        .contains(tile.getCoordinate())) {
+            return;
+        }
+
+        boolean expansionAvailable = controller
+                .canExpandBorder(selectedUnit.getId());
+        graphics2D.setColor(
+                expansionAvailable
+                        ? EXPANSION_AVAILABLE_COLOR
+                        : EXPANSION_BLOCKED_COLOR
+        );
+        graphics2D.fillPolygon(polygon);
+    }
+
+    private void drawBorderExpansionPreviews(
+            Graphics2D graphics2D
+    ) {
+        if (selectedUnit == null ||
+                selectedUnit.getUnitType() !=
+                        UnitType.BORDER_EXPANDER) {
+            return;
+        }
+
+        for (HexCoordinate coordinate :
+                selectedUnit.getPosition()
+                        .getCoordinatesWithinRadius(1)) {
+            HexTile tile = gameMap.getTile(coordinate)
+                    .orElse(null);
+            if (tile == null || !tile.isDiscovered()) {
+                continue;
+            }
+            drawBorderExpansionPreview(
+                    graphics2D,
+                    tile,
+                    createHexPolygon(getTileCenter(coordinate))
+            );
+        }
+    }
+
     private void drawTerritoryBoundary(
             Graphics2D graphics2D,
             HexTile tile,
             Polygon polygon
     ) {
-        if (!tile.isInsidePlayerTerritory()) {
+        if (!gameState.getPlayerTerritory().contains(
+                tile.getCoordinate()
+        )) {
             return;
         }
 
@@ -605,8 +703,8 @@ public final class HexMapPanel extends JPanel {
         graphics2D.setStroke(
                 new BasicStroke(
                         (float) Math.max(
-                                2.0,
-                                2.5 * getZoomLevel()
+                                3.5,
+                                7.0 * getZoomLevel()
                         ),
                         BasicStroke.CAP_ROUND,
                         BasicStroke.JOIN_ROUND
@@ -625,7 +723,9 @@ public final class HexMapPanel extends JPanel {
                     .orElse(null);
 
             if (neighborTile != null &&
-                    neighborTile.isInsidePlayerTerritory()) {
+                    gameState.getPlayerTerritory().contains(
+                            neighborTile.getCoordinate()
+                    )) {
                 continue;
             }
 
@@ -639,6 +739,69 @@ public final class HexMapPanel extends JPanel {
                     polygon.ypoints[startVertex],
                     polygon.xpoints[endVertex],
                     polygon.ypoints[endVertex]
+            );
+        }
+    }
+
+    private void drawTerritoryBoundaries(
+            Graphics2D graphics2D
+    ) {
+        for (HexTile tile : gameMap.getTiles()) {
+            if (!tile.isDiscovered()) {
+                continue;
+            }
+            drawTerritoryBoundary(
+                    graphics2D,
+                    tile,
+                    createHexPolygon(
+                            getTileCenter(tile.getCoordinate())
+                    )
+            );
+        }
+    }
+
+    private void redrawSelectionOutline(
+            Graphics2D graphics2D
+    ) {
+        if (selectedTile == null) {
+            return;
+        }
+        graphics2D.setColor(SELECTION_COLOR);
+        graphics2D.setStroke(
+                new BasicStroke(
+                        (float) Math.max(
+                                3.0,
+                                5.0 * getZoomLevel()
+                        )
+                )
+        );
+        graphics2D.drawPolygon(
+                createHexPolygon(
+                        getTileCenter(
+                                selectedTile.getCoordinate()
+                        )
+                )
+        );
+    }
+
+    private void redrawDestinationOutlines(
+            Graphics2D graphics2D
+    ) {
+        if (validDestinations.isEmpty()) {
+            return;
+        }
+        graphics2D.setColor(DESTINATION_COLOR);
+        graphics2D.setStroke(
+                new BasicStroke(
+                        (float) Math.max(
+                                2.5,
+                                4.0 * getZoomLevel()
+                        )
+                )
+        );
+        for (HexCoordinate coordinate : validDestinations) {
+            graphics2D.drawPolygon(
+                    createHexPolygon(getTileCenter(coordinate))
             );
         }
     }
@@ -657,16 +820,7 @@ public final class HexMapPanel extends JPanel {
                 continue;
             }
 
-            List<Unit> unitsAtPosition =
-                    gameState.getUnitsAt(unit.getPosition());
-
-            int index = unitsAtPosition.indexOf(unit);
-            Point center = getTileCenter(unit.getPosition());
-            Point unitCenter = offsetUnitCenter(
-                    center,
-                    index,
-                    unitsAtPosition.size()
-            );
+            Point unitCenter = getUnitCenter(unit);
 
             drawUnitMarker(
                     graphics2D,
@@ -698,27 +852,40 @@ public final class HexMapPanel extends JPanel {
                     .getBuildingImage(building.getBuildingType());
 
             if (buildingImage != null) {
-                int spriteSize = Math.max(
-                        34,
-                        (int) Math.round(52.0 * getZoomLevel())
+                int maximumWidth = Math.max(
+                        36,
+                        (int) Math.round(
+                                getHexRadius() * 1.62
+                        )
                 );
-                drawSprite(
+                int maximumHeight = Math.max(
+                        40,
+                        (int) Math.round(
+                                getHexRadius() * 1.72
+                        )
+                );
+                drawStructureSprite(
                         graphics2D,
                         buildingImage,
+                        building.getPosition(),
                         center,
-                        spriteSize,
-                        spriteSize,
+                        maximumWidth,
+                        maximumHeight,
                         !tile.isVisible()
                 );
 
                 if (building.isAtRiskFromUpkeep()) {
-                    drawWarningRing(graphics2D, center, spriteSize);
+                    drawWarningRing(
+                            graphics2D,
+                            center,
+                            Math.min(maximumWidth, maximumHeight)
+                    );
                 }
 
                 drawWorkerBadge(
                         graphics2D,
-                        center.x + spriteSize / 3,
-                        center.y - spriteSize / 3,
+                        center.x + maximumWidth / 3,
+                        center.y - maximumHeight / 3,
                         building.getStationedWorkerCount()
                 );
                 continue;
@@ -800,21 +967,34 @@ public final class HexMapPanel extends JPanel {
                     .getPopulationSettlementImage();
 
             if (settlementImage != null) {
-                int spriteSize = Math.max(
-                        35,
-                        (int) Math.round(54.0 * getZoomLevel())
+                int maximumWidth = Math.max(
+                        36,
+                        (int) Math.round(
+                                getHexRadius() * 1.60
+                        )
                 );
-                drawSprite(
+                int maximumHeight = Math.max(
+                        40,
+                        (int) Math.round(
+                                getHexRadius() * 1.70
+                        )
+                );
+                drawStructureSprite(
                         graphics2D,
                         settlementImage,
+                        settlement.getPosition(),
                         center,
-                        spriteSize,
-                        spriteSize,
+                        maximumWidth,
+                        maximumHeight,
                         !tile.isVisible()
                 );
 
                 if (settlement.isAtRiskFromUpkeep()) {
-                    drawWarningRing(graphics2D, center, spriteSize);
+                    drawWarningRing(
+                            graphics2D,
+                            center,
+                            Math.min(maximumWidth, maximumHeight)
+                    );
                 }
                 continue;
             }
@@ -897,14 +1077,47 @@ public final class HexMapPanel extends JPanel {
             return center;
         }
 
-        double spacing = 22.0 * getZoomLevel();
-        double firstOffset = -((count - 1) * spacing) / 2.0;
+        int columns = Math.min(3, count);
+        int rows = (int) Math.ceil(count / (double) columns);
+        int row = index / columns;
+        int column = index % columns;
+        int unitsInRow = Math.min(
+                columns,
+                count - row * columns
+        );
+        double horizontalSpacing = getHexRadius() * 0.50;
+        double verticalSpacing = getHexRadius() * 0.52;
+        double rowWidth = (unitsInRow - 1) * horizontalSpacing;
+        double totalHeight = (rows - 1) * verticalSpacing;
 
         return new Point(
                 (int) Math.round(
-                        center.x + firstOffset + index * spacing
+                        center.x - rowWidth / 2.0 +
+                                column * horizontalSpacing
                 ),
-                center.y
+                (int) Math.round(
+                        center.y - totalHeight / 2.0 +
+                                row * verticalSpacing
+                )
+        );
+    }
+
+    private Point getUnitCenter(Unit unit) {
+        List<Unit> unitsAtPosition = gameState.getUnitsAt(
+                unit.getPosition()
+        );
+        return offsetUnitCenter(
+                getTileCenter(unit.getPosition()),
+                unitsAtPosition.indexOf(unit),
+                unitsAtPosition.size()
+        );
+    }
+
+    private int getUnitSpriteSize(int unitCount) {
+        double scale = unitCount <= 1 ? 0.58 : 0.43;
+        return Math.max(
+                16,
+                (int) Math.round(getHexRadius() * scale)
         );
     }
 
@@ -916,10 +1129,10 @@ public final class HexMapPanel extends JPanel {
     ) {
         BufferedImage unitImage = imageRepository
                 .getUnitImage(unit.getUnitType());
-        int spriteSize = Math.max(
-                30,
-                (int) Math.round(44.0 * getZoomLevel())
-        );
+        int unitCount = gameState.getUnitsAt(
+                unit.getPosition()
+        ).size();
+        int spriteSize = getUnitSpriteSize(unitCount);
 
         if (unitImage != null) {
             if (selected) {
@@ -952,10 +1165,7 @@ public final class HexMapPanel extends JPanel {
             return;
         }
 
-        int diameter = Math.max(
-                17,
-                (int) Math.round(25.0 * getZoomLevel())
-        );
+        int diameter = spriteSize;
         int x = center.x - diameter / 2;
         int y = center.y - diameter / 2;
 
@@ -1038,6 +1248,16 @@ public final class HexMapPanel extends JPanel {
                                 worldY * getZoomLevel()
                 )
         );
+    }
+
+    private double getHexRadius() {
+        return BASE_HEX_SIZE * getZoomLevel();
+    }
+
+    private boolean hasStructureAt(HexCoordinate coordinate) {
+        return gameState.getResourceBuildingAt(coordinate)
+                .isPresent() ||
+                gameState.getSettlementAt(coordinate).isPresent();
     }
 
     private Polygon createHexPolygon(Point center) {
@@ -1202,16 +1422,17 @@ public final class HexMapPanel extends JPanel {
 
         if (image != null) {
             int width = Math.max(
-                    42,
-                    (int) Math.round(62.0 * getZoomLevel())
+                    38,
+                    (int) Math.round(getHexRadius() * 1.62)
             );
             int height = Math.max(
-                    38,
-                    (int) Math.round(54.0 * getZoomLevel())
+                    42,
+                    (int) Math.round(getHexRadius() * 1.72)
             );
-            drawSprite(
+            drawStructureSprite(
                     graphics2D,
                     image,
+                    townHallCoordinate,
                     center,
                     width,
                     height,
@@ -1220,9 +1441,8 @@ public final class HexMapPanel extends JPanel {
             return;
         }
 
-        double zoom = getZoomLevel();
-        int width = (int) Math.round(34.0 * zoom);
-        int height = (int) Math.round(25.0 * zoom);
+        int width = (int) Math.round(getHexRadius() * 1.20);
+        int height = (int) Math.round(getHexRadius() * 0.90);
         int x = center.x - width / 2;
         int y = center.y - height / 2;
 
@@ -1246,15 +1466,17 @@ public final class HexMapPanel extends JPanel {
         }
 
         int size = Math.max(
-                17,
-                (int) Math.round(24.0 * getZoomLevel())
+                24,
+                (int) Math.round(getHexRadius() * 0.38)
         );
-        int gap = 2;
+        int gap = Math.max(
+                3,
+                (int) Math.round(getHexRadius() * 0.04)
+        );
         int totalWidth = resources.size() * size +
                 (resources.size() - 1) * gap;
         int x = center.x - totalWidth / 2;
-        int y = center.y +
-                (int) Math.round(10.0 * getZoomLevel());
+        int y = center.y - size / 2;
 
         for (NaturalResourceType resource : resources) {
             boolean depleted =
@@ -1498,13 +1720,13 @@ public final class HexMapPanel extends JPanel {
             return;
         }
 
-        List<Unit> visibleUnits = clickedTile.isVisible()
-                ? gameState.getUnitsAt(clickedTile.getCoordinate())
-                : Collections.<Unit>emptyList();
+        Unit clickedUnit = clickedTile.isVisible()
+                ? findUnitAt(point, clickedTile)
+                : null;
 
-        if (!visibleUnits.isEmpty()) {
+        if (clickedUnit != null) {
             selectedTile = clickedTile;
-            selectedUnit = chooseUnitFromTile(visibleUnits);
+            selectedUnit = clickedUnit;
             refreshValidDestinations();
             notifySelectionChanged();
             statusListener.accept(
@@ -1531,14 +1753,38 @@ public final class HexMapPanel extends JPanel {
         repaint();
     }
 
-    private Unit chooseUnitFromTile(List<Unit> units) {
-        if (selectedUnit == null ||
-                !units.contains(selectedUnit)) {
-            return units.get(0);
+    private Unit findUnitAt(Point point, HexTile tile) {
+        List<Unit> units = gameState.getUnitsAt(
+                tile.getCoordinate()
+        );
+        int spriteSize = getUnitSpriteSize(units.size());
+        int hitSize = Math.max(
+                18,
+                (int) Math.round(spriteSize * 0.82)
+        );
+
+        /* Reverse order matches the visual paint order for overlap cases. */
+        for (int index = units.size() - 1;
+             index >= 0;
+             index--) {
+            Unit unit = units.get(index);
+            Point center = getUnitCenter(unit);
+            Rectangle hitArea = new Rectangle(
+                    center.x - hitSize / 2,
+                    center.y - hitSize / 2,
+                    hitSize,
+                    hitSize
+            );
+
+            if (hitArea.contains(point) &&
+                    createHexPolygon(
+                            getTileCenter(tile.getCoordinate())
+                    ).contains(point)) {
+                return unit;
+            }
         }
 
-        int currentIndex = units.indexOf(selectedUnit);
-        return units.get((currentIndex + 1) % units.size());
+        return null;
     }
 
     private HexTile findTileAt(Point point) {

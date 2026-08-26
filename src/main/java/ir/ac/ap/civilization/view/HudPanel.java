@@ -14,8 +14,6 @@ import ir.ac.ap.civilization.view.asset.GameImageRepository;
 import ir.ac.ap.civilization.view.asset.ImageScaler;
 
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -80,10 +78,10 @@ public final class HudPanel extends JPanel {
                 imageRepository,
                 "Image repository cannot be null"
         );
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout(8, 8));
         setBackground(BACKGROUND_COLOR);
-        setBorder(new EmptyBorder(12, 12, 12, 12));
-        setPreferredSize(new Dimension(0, 315));
+        setBorder(new EmptyBorder(8, 8, 8, 8));
+        setPreferredSize(new Dimension(0, 174));
 
         turnLabel = createInformationLabel("Turn: 1");
 
@@ -231,7 +229,7 @@ public final class HudPanel extends JPanel {
         );
 
         townHallLevelLabel.setText(
-                "Town Hall: " +
+                "TH " +
                         townHall.getCurrentLevel()
                                 .getDisplayName()
         );
@@ -248,6 +246,17 @@ public final class HudPanel extends JPanel {
                         townHall.getCurrentHp() +
                         "/" +
                         townHall.getMaximumHp()
+        );
+
+        townHallLevelLabel.setText(
+                "<html><center>TH " +
+                        townHall.getCurrentLevel()
+                                .getDisplayName() +
+                        "<br>" +
+                        townHall.getCurrentHp() +
+                        "/" +
+                        townHall.getMaximumHp() +
+                        "</center></html>"
         );
 
         ResourceFlowForecast forecast =
@@ -281,42 +290,17 @@ public final class HudPanel extends JPanel {
     }
 
     private JPanel createInformationSection() {
-        JPanel informationPanel = new JPanel();
-
-        informationPanel.setLayout(
-                new BoxLayout(
-                        informationPanel,
-                        BoxLayout.Y_AXIS
-                )
+        JPanel informationPanel = new JPanel(
+                new BorderLayout(6, 6)
         );
-
         informationPanel.setOpaque(false);
 
-        JPanel headerPanel =
-                new JPanel(new GridLayout(1, 4, 8, 0));
-
-        headerPanel.setOpaque(false);
-
-        headerPanel.add(turnLabel);
-        headerPanel.add(unitCapLabel);
-        headerPanel.add(townHallLevelLabel);
-        headerPanel.add(townHallHpLabel);
-
-        headerPanel.setMaximumSize(
-                new Dimension(Integer.MAX_VALUE, 42)
+        JPanel summaryRow = new JPanel(
+                new GridLayout(1, 8, 6, 0)
         );
-
-        JPanel resourcesPanel =
-                new JPanel(
-                        new GridLayout(
-                                1,
-                                ResourceType.values().length,
-                                8,
-                                0
-                        )
-                );
-
-        resourcesPanel.setOpaque(false);
+        summaryRow.setOpaque(false);
+        configureCompactSummaryLabel(turnLabel);
+        summaryRow.add(turnLabel);
 
         for (ResourceType resourceType :
                 ResourceType.values()) {
@@ -331,48 +315,34 @@ public final class HudPanel extends JPanel {
                     imageRepository.getStockpileImage(resourceType),
                     24
             );
+            configureCompactSummaryLabel(resourceLabel);
 
             resourceLabels.put(
                     resourceType,
                     resourceLabel
             );
 
-            resourcesPanel.add(resourceLabel);
+            summaryRow.add(resourceLabel);
         }
 
-        resourcesPanel.setMaximumSize(
-                new Dimension(Integer.MAX_VALUE, 42)
+        configureCompactSummaryLabel(unitCapLabel);
+        configureCompactSummaryLabel(townHallLevelLabel);
+        configureCompactSummaryLabel(queueLabel);
+        summaryRow.add(unitCapLabel);
+        summaryRow.add(townHallLevelLabel);
+        summaryRow.add(queueLabel);
+
+        JPanel detailRows = new JPanel(
+                new GridLayout(2, 2, 6, 4)
         );
+        detailRows.setOpaque(false);
+        detailRows.add(unitBreakdownLabel);
+        detailRows.add(economyLabel);
+        detailRows.add(crisisLabel);
+        detailRows.add(statusLabel);
 
-        unitBreakdownLabel.setAlignmentX(0.5f);
-        unitBreakdownLabel.setMaximumSize(
-                new Dimension(Integer.MAX_VALUE, 36)
-        );
-
-        queueLabel.setAlignmentX(0.5f);
-
-        queueLabel.setMaximumSize(
-                new Dimension(Integer.MAX_VALUE, 40)
-        );
-
-        economyLabel.setAlignmentX(0.5f);
-        economyLabel.setMaximumSize(
-                new Dimension(Integer.MAX_VALUE, 36)
-        );
-
-        informationPanel.add(headerPanel);
-        informationPanel.add(Box.createVerticalStrut(8));
-        informationPanel.add(resourcesPanel);
-        informationPanel.add(Box.createVerticalStrut(6));
-        informationPanel.add(unitBreakdownLabel);
-        informationPanel.add(Box.createVerticalStrut(8));
-        informationPanel.add(queueLabel);
-        informationPanel.add(Box.createVerticalStrut(6));
-        informationPanel.add(economyLabel);
-        informationPanel.add(Box.createVerticalStrut(5));
-        informationPanel.add(crisisLabel);
-        informationPanel.add(Box.createVerticalStrut(5));
-        informationPanel.add(statusLabel);
+        informationPanel.add(summaryRow, BorderLayout.CENTER);
+        informationPanel.add(detailRows, BorderLayout.SOUTH);
 
         return informationPanel;
     }
@@ -420,6 +390,20 @@ public final class HudPanel extends JPanel {
         return label;
     }
 
+    private void configureCompactSummaryLabel(JLabel label) {
+        label.setFont(
+                new Font(Font.SANS_SERIF, Font.BOLD, 12)
+        );
+        label.setBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(
+                                new Color(62, 71, 83)
+                        ),
+                        new EmptyBorder(5, 4, 5, 4)
+                )
+        );
+    }
+
     private JButton createButton(
             String text,
             Color backgroundColor
@@ -430,7 +414,7 @@ public final class HudPanel extends JPanel {
                 new Font(Font.SANS_SERIF, Font.BOLD, 14)
         );
 
-        button.setForeground(Color.WHITE);
+        button.setForeground(Color.BLACK);
         button.setBackground(backgroundColor);
         button.setFocusPainted(false);
 
@@ -441,7 +425,7 @@ public final class HudPanel extends JPanel {
         );
 
         button.setPreferredSize(
-                new Dimension(170, 38)
+                new Dimension(170, 36)
         );
 
         return button;
@@ -483,14 +467,20 @@ public final class HudPanel extends JPanel {
 
             label.setText(
                     getResourceDisplayName(resourceType) +
-                            ": " +
+                            " " +
                             amount +
                             "/" +
                             capacity +
-                            " (" +
+                            " | " +
                             productionPrefix +
                             production +
-                            " net/turn)"
+                            "/t"
+            );
+            label.setToolTipText(
+                    getResourceDisplayName(resourceType) +
+                            ": " + amount + "/" + capacity +
+                            ", net " + productionPrefix +
+                            production + " per turn"
             );
 
             label.setForeground(
@@ -505,14 +495,23 @@ public final class HudPanel extends JPanel {
             TownHall townHall
     ) {
         if (!townHall.isBusy()) {
-            queueLabel.setText("Production: Idle");
+            queueLabel.setText("Command: Idle");
+            queueLabel.setToolTipText(
+                    "Town Hall production queue is idle"
+            );
             return;
         }
 
         queueLabel.setText(
-                "Production: " +
+                "Command: " +
                         townHall.getActiveCommandName() +
-                        " - " +
+                        " (" +
+                        townHall.getRemainingProductionTurns() +
+                        "T)"
+        );
+        queueLabel.setToolTipText(
+                townHall.getActiveCommandName() +
+                        ": " +
                         townHall.getRemainingProductionTurns() +
                         " turn(s) remaining"
         );

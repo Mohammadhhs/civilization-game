@@ -17,9 +17,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import java.awt.Color;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridLayout;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
@@ -74,9 +76,9 @@ public final class BuildingActionsPanel extends JPanel {
                 "Game controller cannot be null"
         );
 
-        setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        setLayout(new BorderLayout(8, 7));
         setBackground(BACKGROUND_COLOR);
-        setPreferredSize(new Dimension(0, 122));
+        setPreferredSize(new Dimension(0, 104));
         setBorder(
                 BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(
@@ -205,14 +207,26 @@ public final class BuildingActionsPanel extends JPanel {
                 }
         );
 
-        add(titleLabel);
-        add(buildingTypeBox);
-        add(costLabel);
-        add(buildButton);
-        add(settlementButton);
-        add(expandBorderButton);
-        add(stationButton);
-        add(unstationButton);
+        JPanel selectorRow = new JPanel(
+                new FlowLayout(FlowLayout.LEFT, 10, 0)
+        );
+        selectorRow.setOpaque(false);
+        selectorRow.add(titleLabel);
+        selectorRow.add(buildingTypeBox);
+        selectorRow.add(costLabel);
+
+        JPanel actionRow = new JPanel(
+                new GridLayout(1, 5, 8, 0)
+        );
+        actionRow.setOpaque(false);
+        actionRow.add(buildButton);
+        actionRow.add(settlementButton);
+        actionRow.add(expandBorderButton);
+        actionRow.add(stationButton);
+        actionRow.add(unstationButton);
+
+        add(selectorRow, BorderLayout.NORTH);
+        add(actionRow, BorderLayout.CENTER);
 
         refreshCostLabel();
         refresh(null);
@@ -297,11 +311,16 @@ public final class BuildingActionsPanel extends JPanel {
                         )
         );
 
-        expandBorderButton.setEnabled(
-                borderExpanderSelected &&
-                        controller.canExpandBorder(
+        String borderExpansionProblem =
+                borderExpanderSelected
+                        ? controller.getBorderExpansionProblem(
                                 selectedUnit.getId()
                         )
+                        : "Select a Border Expander";
+
+        expandBorderButton.setEnabled(
+                borderExpanderSelected &&
+                        borderExpansionProblem == null
         );
 
         stationButton.setEnabled(
@@ -333,9 +352,9 @@ public final class BuildingActionsPanel extends JPanel {
         );
 
         expandBorderButton.setToolTipText(
-                borderExpanderSelected
-                        ? "Claim this explored hex and its explored neighbors"
-                        : "Select a Border Expander"
+                borderExpansionProblem == null
+                        ? "Claim this explored hex and its six neighbors"
+                        : borderExpansionProblem
         );
 
         stationButton.setToolTipText(
@@ -399,7 +418,7 @@ public final class BuildingActionsPanel extends JPanel {
         JButton button = new JButton(text);
         button.setPreferredSize(new Dimension(145, 36));
         button.setFocusPainted(false);
-        button.setForeground(Color.WHITE);
+        button.setForeground(Color.BLACK);
         button.setBackground(backgroundColor);
         button.setFont(
                 new Font(Font.SANS_SERIF, Font.BOLD, 12)

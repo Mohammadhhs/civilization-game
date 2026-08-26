@@ -64,7 +64,7 @@ public final class SettingsDialog extends JDialog {
         JButton closeButton = new JButton("Close");
         closeButton.setFocusPainted(false);
         closeButton.setBackground(new Color(74, 170, 108));
-        closeButton.setForeground(Color.WHITE);
+        closeButton.setForeground(Color.BLACK);
         closeButton.addActionListener(event -> dispose());
 
         content.add(title, BorderLayout.NORTH);

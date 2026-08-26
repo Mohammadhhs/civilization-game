@@ -25,14 +25,18 @@ public final class BorderExpansionService {
     }
 
     public boolean canExpand(int unitId) {
+        return getExpansionProblem(unitId) == null;
+    }
+
+    public String getExpansionProblem(int unitId) {
         try {
             validateExpansion(unitId);
-            return true;
+            return null;
         } catch (
                 IllegalArgumentException |
                 IllegalStateException exception
         ) {
-            return false;
+            return exception.getMessage();
         }
     }
 
@@ -97,9 +101,10 @@ public final class BorderExpansionService {
                             )
                     );
 
-            if (!tile.isDiscovered()) {
+            if (!territory.contains(coordinate) &&
+                    !tile.isDiscovered()) {
                 throw new IllegalStateException(
-                        "Every expansion hex must be explored first"
+                        "Every new expansion hex must be explored first"
                 );
             }
 
