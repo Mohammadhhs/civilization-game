@@ -36,6 +36,11 @@ public final class UnitFactory implements Serializable {
             case CATAPULT:
                 return new MilitaryUnit(id, unitType, position);
 
+            case FISHING_BOAT:
+            case GALLEY:
+            case PIRATE:
+                return new NavalUnit(id, unitType, position);
+
             default:
                 throw new IllegalStateException(
                         "Unknown unit type"

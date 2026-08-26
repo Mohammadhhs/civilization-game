@@ -39,6 +39,18 @@ public enum UnitType {
     CATAPULT(
             "Catapult", "CT", 4, true, 50, 2, 2,
             createCost(20, 40, 30, 20)
+    ),
+    FISHING_BOAT(
+            "Fishing Boat", "FB", 3, false, 80, 4, 0,
+            createCost(20, 50, 0, 0)
+    ),
+    GALLEY(
+            "Galley", "GL", 4, true, 130, 4, 2,
+            createCost(30, 70, 0, 30)
+    ),
+    PIRATE(
+            "Pirate", "PR", 4, true, 110, 4, 2,
+            createCost(0, 0, 0, 0)
     );
 
     private final String displayName;
@@ -100,6 +112,10 @@ public enum UnitType {
 
     public int getAttackRange() {
         return attackRange;
+    }
+
+    public boolean isNaval() {
+        return this == FISHING_BOAT || this == GALLEY || this == PIRATE;
     }
 
     @Override

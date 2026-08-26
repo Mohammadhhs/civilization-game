@@ -22,6 +22,7 @@ public final class TurnManager {
     private final List<TurnPhase> lastCompletedPhases;
     private final TribeService tribeService;
     private final DisasterService disasterService;
+    private final EnemyAiService enemyAiService;
 
     public TurnManager(GameState gameState) {
         this.gameState = Objects.requireNonNull(
@@ -41,6 +42,7 @@ public final class TurnManager {
         this.lastCompletedPhases = new ArrayList<>();
         this.tribeService = new TribeService(gameState);
         this.disasterService = new DisasterService(gameState);
+        this.enemyAiService = new EnemyAiService(gameState);
     }
 
     public List<TurnPhase> getLastCompletedPhases() {
@@ -83,6 +85,9 @@ public final class TurnManager {
 
             tribeService.advanceTurn();
             complete(TurnPhase.TRIBE_BEHAVIOR);
+
+            enemyAiService.advanceTurn();
+            complete(TurnPhase.ENEMY_AI);
 
             updateHappiness();
             complete(TurnPhase.HAPPINESS);

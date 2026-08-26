@@ -23,6 +23,7 @@ import ir.ac.ap.civilization.model.resource.ResourceType;
 import ir.ac.ap.civilization.model.random.DeterministicRandomSource;
 import ir.ac.ap.civilization.model.random.RandomSource;
 import ir.ac.ap.civilization.model.phase2.PhaseTwoState;
+import ir.ac.ap.civilization.model.phase2.Difficulty;
 import ir.ac.ap.civilization.model.tribe.Tribe;
 import ir.ac.ap.civilization.model.tribe.TribeRelationState;
 import ir.ac.ap.civilization.model.tribe.TribeType;
@@ -68,6 +69,7 @@ public final class GameState implements Serializable {
     private final Map<String, Integer> lastTradeTurns;
     private final List<Tribe> tribes;
     private final PhaseTwoState phaseTwoState;
+    private final Difficulty difficulty;
     private final FogOfWarService fogOfWarService;
     private final UnitFactory unitFactory;
     private final EconomyStatus economyStatus;
@@ -83,10 +85,18 @@ public final class GameState implements Serializable {
     }
 
     public GameState(long mapSeed) {
-        this(new HexMapGenerator().generate(mapSeed));
+        this(new HexMapGenerator().generate(mapSeed), Difficulty.NORMAL);
+    }
+
+    public GameState(long mapSeed, Difficulty difficulty) {
+        this(new HexMapGenerator().generate(mapSeed), difficulty);
     }
 
     GameState(GameMap gameMap) {
+        this(gameMap, Difficulty.NORMAL);
+    }
+
+    public GameState(GameMap gameMap, Difficulty difficulty) {
         this.turnNumber = 1;
         this.nextUnitId = 1;
         this.nextBuildingId = 1;
@@ -104,6 +114,10 @@ public final class GameState implements Serializable {
         this.lastTradeTurns = new LinkedHashMap<>();
         this.tribes = new ArrayList<>();
         this.phaseTwoState = new PhaseTwoState();
+        this.difficulty = Objects.requireNonNull(
+                difficulty,
+                "Difficulty cannot be null"
+        );
         this.fogOfWarService = new FogOfWarService();
         this.unitFactory = new UnitFactory();
         this.economyStatus = new EconomyStatus();
@@ -125,6 +139,10 @@ public final class GameState implements Serializable {
 
     public String getGameId() {
         return gameId;
+    }
+
+    public Difficulty getDifficulty() {
+        return difficulty == null ? Difficulty.NORMAL : difficulty;
     }
 
     public TownHall getTownHall() {
@@ -488,11 +506,19 @@ public final class GameState implements Serializable {
     }
 
     public void refreshVisibility() {
+        List<Unit> playerUnits = new ArrayList<>();
+        for (Unit unit : units) {
+            if (unit.getOwner().isPlayer()) playerUnits.add(unit);
+        }
+        List<MaintainedBuilding> playerBuildings = new ArrayList<>();
+        for (MaintainedBuilding building : getMaintainedBuildings()) {
+            if (building.getOwner().isPlayer()) playerBuildings.add(building);
+        }
         fogOfWarService.refreshVisibility(
                 gameMap,
                 TOWN_HALL_COORDINATE,
-                units,
-                getMaintainedBuildings()
+                playerUnits,
+                playerBuildings
         );
         for (Tribe tribe : tribes) {
             HexTile campTile = gameMap.getTile(
@@ -550,7 +576,7 @@ public final class GameState implements Serializable {
         Unit unit = unitFactory.create(
                 createNextUnitId(),
                 unitType,
-                findDeploymentCoordinate()
+                findDeploymentCoordinate(unitType)
         );
 
         units.add(unit);
@@ -839,7 +865,24 @@ public final class GameState implements Serializable {
         return createdId;
     }
 
-    private HexCoordinate findDeploymentCoordinate() {
+    private HexCoordinate findDeploymentCoordinate(UnitType unitType) {
+        if (unitType.isNaval()) {
+            for (SpecialBuilding building : specialBuildings) {
+                if (building.getType() != SpecialBuildingType.DOCK ||
+                        !building.getOwner().isPlayer() ||
+                        building.isDestroyed()) continue;
+                for (HexTile neighbor : gameMap.getValidNeighbors(
+                        building.getPosition())) {
+                    if (neighbor.getTerrainType() ==
+                            ir.ac.ap.civilization.model.map.TerrainType.SEA) {
+                        return neighbor.getCoordinate();
+                    }
+                }
+            }
+            throw new IllegalStateException(
+                    "A Dock with an adjacent sea hex is required"
+            );
+        }
         List<HexCoordinate> candidates = new ArrayList<>();
         candidates.add(TOWN_HALL_COORDINATE);
         candidates.addAll(TOWN_HALL_COORDINATE.getNeighbors());

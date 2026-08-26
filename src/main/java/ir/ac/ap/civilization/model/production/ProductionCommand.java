@@ -1,8 +1,10 @@
 package ir.ac.ap.civilization.model.production;
 
+import java.io.Serializable;
+
 import ir.ac.ap.civilization.model.building.TownHall;
 
-public interface ProductionCommand {
+public interface ProductionCommand extends Serializable {
 
     String getName();
 

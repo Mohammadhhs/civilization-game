@@ -119,6 +119,12 @@ public final class GameImageRepository {
                 ROOT + "units/military/cavalry.png", classLoader);
         putOptional(unitImages, UnitType.CATAPULT,
                 ROOT + "units/military/catapult.png", classLoader);
+        putOptional(unitImages, UnitType.FISHING_BOAT,
+                ROOT + "units/naval/fishing_boat.png", classLoader);
+        putOptional(unitImages, UnitType.GALLEY,
+                ROOT + "units/naval/galley.png", classLoader);
+        putOptional(unitImages, UnitType.PIRATE,
+                ROOT + "units/naval/pirate.png", classLoader);
     }
 
     public BufferedImage getTerrainImage(TerrainType terrainType) {

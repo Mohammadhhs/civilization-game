@@ -52,7 +52,7 @@ public final class UnitMovementService {
 
         return !isStationedWorker(unit) &&
                 unit.getPosition().isAdjacentTo(destination) &&
-                isPassableForUnit(destinationTile) &&
+                isPassableForUnit(unit, destinationTile) &&
                 unit.canSpendActionPoints(
                         calculateMovementCost(unit, destinationTile)
                 );
@@ -74,7 +74,7 @@ public final class UnitMovementService {
         for (HexTile neighbor : gameMap.getValidNeighbors(
                 unit.getPosition()
         )) {
-            if (isPassableForUnit(neighbor) &&
+            if (isPassableForUnit(unit, neighbor) &&
                     unit.canSpendActionPoints(
                             calculateMovementCost(unit, neighbor)
                     )) {
@@ -103,7 +103,7 @@ public final class UnitMovementService {
 
         validateWorkerIsNotStationed(unit);
         validateAdjacency(unit, destination);
-        validatePassableDestination(destinationTile);
+        validatePassableDestination(unit, destinationTile);
 
         int movementCost = calculateMovementCost(unit, destinationTile);
 
@@ -160,9 +160,10 @@ public final class UnitMovementService {
     }
 
     private void validatePassableDestination(
+            Unit unit,
             HexTile destinationTile
     ) {
-        if (!isPassableForUnit(destinationTile)) {
+        if (!isPassableForUnit(unit, destinationTile)) {
             throw new IllegalStateException(
                     "The destination terrain is not passable"
             );
@@ -187,7 +188,8 @@ public final class UnitMovementService {
     }
 
     private int calculateMovementCost(Unit unit, HexTile destinationTile) {
-        if (destinationTile.getTerrainType() == TerrainType.SEA) {
+        if (destinationTile.getTerrainType() == TerrainType.SEA &&
+                !unit.getUnitType().isNaval()) {
             return unit.getCurrentActionPoints();
         }
         int cost = gameState.getPhaseTwoState()
@@ -208,7 +210,10 @@ public final class UnitMovementService {
         }
     }
 
-    private boolean isPassableForUnit(HexTile tile) {
+    private boolean isPassableForUnit(Unit unit, HexTile tile) {
+        if (unit.getUnitType().isNaval()) {
+            return tile.getTerrainType() == TerrainType.SEA;
+        }
         return tile.isNormallyPassable() ||
                 tile.getTerrainType() == TerrainType.SEA &&
                         gameState.getTownHall().hasTechnology(

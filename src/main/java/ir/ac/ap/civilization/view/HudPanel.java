@@ -193,7 +193,12 @@ public final class HudPanel extends JPanel {
                 townHall.getStockpile();
 
         turnLabel.setText(
-                "Turn: " + gameState.getTurnNumber()
+                "Turn " + gameState.getTurnNumber() +
+                        " | " + gameState.getDifficulty()
+        );
+        turnLabel.setToolTipText(
+                "Seed: " + gameState.getGameMap().getSeed() +
+                        " | Difficulty: " + gameState.getDifficulty()
         );
 
         unitCapLabel.setText(

@@ -19,7 +19,8 @@ public final class DisasterService {
     }
 
     public DisasterReport rollEndTurnDisaster() {
-        if (gameState.getRandomSource().nextInt(100) >= 15) return null;
+        if (gameState.getRandomSource().nextInt(100) >=
+                gameState.getDifficulty().getDisasterChancePercent()) return null;
         DisasterType[] types = DisasterType.values();
         DisasterType type = types[gameState.getRandomSource().nextInt(types.length)];
         List<HexTile> tiles = new ArrayList<>(gameState.getGameMap().getTiles());
@@ -68,6 +69,9 @@ public final class DisasterService {
             }
             gameState.getPhaseTwoState().notifyPlayer(
                     type + " affected " + affected + " entities"
+            );
+            gameState.getPhaseTwoState().showVisualEvent(
+                    center, type.name().replace('_', ' ')
             );
             if (ownsOperation) gameState.completeOperation();
             return new DisasterReport(type, center, affected);

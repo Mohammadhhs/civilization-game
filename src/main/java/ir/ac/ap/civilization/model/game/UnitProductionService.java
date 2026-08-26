@@ -87,6 +87,15 @@ public final class UnitProductionService {
                         );
             case CATAPULT:
                 return level >= 3;
+            case FISHING_BOAT:
+            case GALLEY:
+                return level >= 2 && gameState.getSpecialBuildings().stream()
+                        .anyMatch(building -> building.getType() ==
+                                ir.ac.ap.civilization.model.building.SpecialBuildingType.DOCK &&
+                                building.getOwner().isPlayer() &&
+                                !building.isDestroyed());
+            case PIRATE:
+                return false;
             default:
                 return true;
         }

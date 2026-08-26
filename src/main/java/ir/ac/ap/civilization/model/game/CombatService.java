@@ -54,7 +54,10 @@ public final class CombatService {
             throw new IllegalStateException("No hostile military defender");
         }
 
-        gameState.beginOperation(GameOperation.RESOLVING_COMBAT);
+        boolean ownsOperation = gameState.isStableForPersistence();
+        if (ownsOperation) {
+            gameState.beginOperation(GameOperation.RESOLVING_COMBAT);
+        }
         try {
             for (Unit attacker : attackers) {
                 attacker.spendActionPoints(ATTACK_ACTION_POINT_COST);
@@ -81,7 +84,15 @@ public final class CombatService {
             List<Integer> destroyed = new ArrayList<>();
             applyLosses(attackers, attackerLosses, destroyed);
             applyLosses(defenders, defenderLosses, destroyed);
-            gameState.completeOperation();
+            gameState.getPhaseTwoState().showVisualEvent(
+                    defenderHex,
+                    "COMBAT " + attackerLosses + ":" + defenderLosses
+            );
+            gameState.getPhaseTwoState().notifyPlayer(
+                    "Combat at " + defenderHex + " | losses " +
+                            attackerLosses + ":" + defenderLosses
+            );
+            if (ownsOperation) gameState.completeOperation();
             return new CombatResult(
                     attackDice,
                     defenseDice,
@@ -90,7 +101,7 @@ public final class CombatService {
                     destroyed
             );
         } catch (RuntimeException exception) {
-            gameState.failOperation();
+            if (ownsOperation) gameState.failOperation();
             throw exception;
         }
     }
@@ -116,6 +127,9 @@ public final class CombatService {
                     : STRUCTURE_DAMAGE;
         }
         structure.takeDamage(damage);
+        gameState.getPhaseTwoState().showVisualEvent(
+                targetHex, "SIEGE -" + damage
+        );
         return damage;
     }
 

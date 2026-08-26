@@ -1,6 +1,7 @@
 package ir.ac.ap.civilization.model.phase2;
 
 import ir.ac.ap.civilization.model.infrastructure.InfrastructureState;
+import ir.ac.ap.civilization.model.map.HexCoordinate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,6 +16,9 @@ public final class PhaseTwoState implements Serializable {
     private final HappinessState happiness = new HappinessState();
     private final InfrastructureState infrastructure = new InfrastructureState();
     private final List<String> notifications = new ArrayList<>();
+    private HexCoordinate visualEventCoordinate;
+    private String visualEventLabel;
+    private long visualEventTimestamp;
 
     public Season getSeason() { return season; }
     public int getTurnsInSeason() { return turnsInSeason; }
@@ -28,6 +32,29 @@ public final class PhaseTwoState implements Serializable {
         if (message == null || message.trim().isEmpty()) return;
         notifications.add(message);
         while (notifications.size() > 30) notifications.remove(0);
+    }
+
+    public void clearNotifications() {
+        notifications.clear();
+    }
+
+    public HexCoordinate getVisualEventCoordinate() {
+        return visualEventCoordinate;
+    }
+
+    public String getVisualEventLabel() {
+        return visualEventLabel;
+    }
+
+    public long getVisualEventTimestamp() {
+        return visualEventTimestamp;
+    }
+
+    public void showVisualEvent(HexCoordinate coordinate, String label) {
+        if (coordinate == null || label == null || label.trim().isEmpty()) return;
+        visualEventCoordinate = coordinate;
+        visualEventLabel = label;
+        visualEventTimestamp = System.currentTimeMillis();
     }
 
     public void advanceSeason() {

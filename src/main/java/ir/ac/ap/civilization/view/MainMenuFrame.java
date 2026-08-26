@@ -5,6 +5,7 @@ import ir.ac.ap.civilization.controller.GameController;
 import ir.ac.ap.civilization.model.game.GameState;
 import ir.ac.ap.civilization.model.game.GameSaveService;
 import ir.ac.ap.civilization.model.game.SaveSlot;
+import ir.ac.ap.civilization.model.phase2.Difficulty;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -15,6 +16,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.JComboBox;
+import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -45,8 +48,8 @@ public final class MainMenuFrame extends JFrame {
 
     private void configureFrame() {
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        setSize(620, 520);
-        setMinimumSize(new Dimension(520, 440));
+        setSize(620, 600);
+        setMinimumSize(new Dimension(520, 540));
         setLocationRelativeTo(null);
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
@@ -88,6 +91,10 @@ public final class MainMenuFrame extends JFrame {
                 "Start",
                 new Color(74, 170, 108)
         );
+        JButton mapEditorButton = createButton(
+                "Map Editor",
+                new Color(151, 116, 196)
+        );
         JButton settingsButton = createButton(
                 "Settings",
                 new Color(70, 145, 205)
@@ -102,6 +109,8 @@ public final class MainMenuFrame extends JFrame {
         );
 
         startButton.addActionListener(event -> startGame());
+        mapEditorButton.addActionListener(event ->
+                new MapEditorFrame(musicPlayer).setVisible(true));
         loadButton.addActionListener(event -> loadGame());
         settingsButton.addActionListener(
                 event -> new SettingsDialog(
@@ -118,6 +127,8 @@ public final class MainMenuFrame extends JFrame {
         panel.add(startButton);
         panel.add(Box.createVerticalStrut(14));
         panel.add(loadButton);
+        panel.add(Box.createVerticalStrut(14));
+        panel.add(mapEditorButton);
         panel.add(Box.createVerticalStrut(14));
         panel.add(settingsButton);
         panel.add(Box.createVerticalStrut(14));
@@ -152,11 +163,42 @@ public final class MainMenuFrame extends JFrame {
     }
 
     private void startGame() {
-        GameState gameState = new GameState();
+        JComboBox<Difficulty> difficulty = new JComboBox<>(Difficulty.values());
+        JTextField seed = new JTextField(
+                String.valueOf(System.currentTimeMillis()), 16
+        );
+        JPanel options = new JPanel(new java.awt.GridLayout(2, 2, 8, 8));
+        options.add(new JLabel("Difficulty:"));
+        options.add(difficulty);
+        options.add(new JLabel("Map seed:"));
+        options.add(seed);
+        if (JOptionPane.showConfirmDialog(
+                this, options, "New Game",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        ) != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        long mapSeed;
+        try {
+            mapSeed = Long.parseLong(seed.getText().trim());
+        } catch (NumberFormatException exception) {
+            JOptionPane.showMessageDialog(
+                    this, "Seed must be a whole number",
+                    "Invalid seed", JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        GameState gameState = new GameState(
+                mapSeed,
+                (Difficulty) difficulty.getSelectedItem()
+        );
         GameController controller =
                 new GameController(gameState);
 
-        GameFrame gameFrame = new GameFrame(controller);
+        GameFrame gameFrame = new GameFrame(controller, musicPlayer);
         gameFrame.setVisible(true);
         dispose();
     }
@@ -174,7 +216,7 @@ public final class MainMenuFrame extends JFrame {
         );
         try {
             GameState loaded = saves.load(slot);
-            new GameFrame(new GameController(loaded)).setVisible(true);
+            new GameFrame(new GameController(loaded), musicPlayer).setVisible(true);
             dispose();
         } catch (IOException exception) {
             JOptionPane.showMessageDialog(this, exception.getMessage(),

@@ -5,6 +5,7 @@ import ir.ac.ap.civilization.model.game.GameState;
 import ir.ac.ap.civilization.model.game.GameSaveService;
 import ir.ac.ap.civilization.model.game.SaveSlot;
 import ir.ac.ap.civilization.view.asset.GameImageRepository;
+import ir.ac.ap.civilization.audio.BackgroundMusicPlayer;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -32,14 +33,23 @@ public final class GameFrame extends JFrame {
     private final BuildingActionsPanel buildingActionsPanel;
     private final UnitProductionPanel unitProductionPanel;
     private final GameSaveService saveService;
+    private final BackgroundMusicPlayer musicPlayer;
 
     public GameFrame(GameController controller) {
+        this(controller, null);
+    }
+
+    public GameFrame(
+            GameController controller,
+            BackgroundMusicPlayer musicPlayer
+    ) {
         super("Civilization - Advanced Programming Project");
 
         this.controller = Objects.requireNonNull(
                 controller,
                 "Game controller cannot be null"
         );
+        this.musicPlayer = musicPlayer;
 
         this.imageRepository = new GameImageRepository();
         this.hudPanel = new HudPanel(imageRepository);
@@ -299,6 +309,31 @@ public final class GameFrame extends JFrame {
         game.add(load);
         game.addSeparator();
         game.add(phaseTwo);
+        JMenuItem evaluation = new JMenuItem("Evaluation / Debug Scenarios");
+        evaluation.addActionListener(event -> {
+            new EvaluationToolsDialog(this, controller.getGameState())
+                    .setVisible(true);
+            refreshView();
+        });
+        game.add(evaluation);
+        JMenuItem combat = new JMenuItem("Combat Console");
+        combat.addActionListener(event -> {
+            new CombatDialog(this, controller).setVisible(true);
+            refreshView();
+        });
+        game.add(combat);
+        JMenuItem notifications = new JMenuItem("Notification Center");
+        notifications.addActionListener(event ->
+                new NotificationCenterDialog(
+                        this, controller.getGameState().getPhaseTwoState()
+                ).setVisible(true));
+        game.add(notifications);
+        if (musicPlayer != null) {
+            JMenuItem audio = new JMenuItem("Audio Settings");
+            audio.addActionListener(event ->
+                    new SettingsDialog(this, musicPlayer).setVisible(true));
+            game.add(audio);
+        }
         bar.add(game);
         return bar;
     }
@@ -319,7 +354,9 @@ public final class GameFrame extends JFrame {
                 JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         try {
             GameState loaded = saveService.load(slot);
-            GameFrame frame = new GameFrame(new GameController(loaded));
+            GameFrame frame = new GameFrame(
+                    new GameController(loaded), musicPlayer
+            );
             frame.setVisible(true);
             dispose();
         } catch (IOException exception) {

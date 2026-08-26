@@ -8,6 +8,7 @@ public enum TurnPhase {
     UNIT_DEPLOYMENT,
     ECONOMY,
     TRIBE_BEHAVIOR,
+    ENEMY_AI,
     HAPPINESS,
     SEASON,
     DISASTER,
